@@ -11,6 +11,7 @@ public class LobbyUI : MonoBehaviour
     public TMP_Text pseudoText;
     public TMP_Text levelText;
     public TMP_Text eloText;
+    public TMP_Text coinsText;
 
     [Header("Boutons modes")]
     public Button rankedButton;
@@ -30,6 +31,7 @@ public class LobbyUI : MonoBehaviour
             pseudoText.text = p.pseudo;
             levelText.text  = $"Niveau {p.level}";
             eloText.text    = $"MMR Ranked : {p.ranked_elo}";
+            coinsText.text  = $"Coins : {p.soft_currency}";
         }
 
         rankedButton.onClick.AddListener(  () => JoinQueue("ranked"));

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
@@ -55,6 +55,128 @@ export default function Maps() {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [reportDrafts, setReportDrafts] = useState({});
   const [mapContent, setMapContent] = useState("");
+  const [generatedMapContent, setGeneratedMapContent] = useState("");
+  const [showEditor, setShowEditor] = useState(false);
+  const [publishAuto, setPublishAuto] = useState(false);
+  const [gridWidth, setGridWidth] = useState(16);
+  const [gridHeight, setGridHeight] = useState(12);
+  const [grid, setGrid] = useState(null); // will be 2D array
+  const [selectedTile, setSelectedTile] = useState(1);
+
+  const TileColors = ["#222222","#8b5a2b","#2e7d32","#0b79e6","#e11d48","#f59e0b"];
+  const TileNames = ["Vide","Mur","Sol","Spawn J1","Spawn J2","Powerup"];
+
+  const initGrid = (w = gridWidth, h = gridHeight) => {
+    const g = Array.from({ length: h }, () => Array.from({ length: w }, () => 0));
+    setGrid(g);
+  };
+
+  // initialize when editor opened or sizes changed
+  useEffect(() => {
+    if (showEditor && !grid) initGrid();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showEditor]);
+
+  const paintCell = (x, y) => {
+    if (!grid) return;
+    const g = grid.map((row) => row.slice());
+    g[y][x] = selectedTile;
+    setGrid(g);
+  };
+
+  const clearGrid = () => {
+    initGrid(gridWidth, gridHeight);
+  };
+
+  const generateMapJson = () => {
+    if (!grid) return null;
+    const cells = [];
+    for (let y = 0; y < grid.length; y++) {
+      for (let x = 0; x < grid[0].length; x++) {
+        const t = grid[y][x];
+        if (t && t !== 0) cells.push({ x, y, type: t });
+      }
+    }
+    const mapObj = {
+      name: title || "Ma map",
+      description: description || "",
+      width: grid[0].length,
+      height: grid.length,
+      cells,
+    };
+    return mapObj;
+  };
+
+  const setEditorAsContent = () => {
+    const mapObj = generateMapJson();
+    if (!mapObj) {
+      toast.error("Rien a generer dans l'editeur.");
+      return;
+    }
+    const json = JSON.stringify(mapObj);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    setGeneratedMapContent(b64);
+    toast.success("Contenu de la map genere et ajoute au formulaire.");
+    setShowEditor(false);
+  };
+
+  const importExample = () => {
+    // demo map: border walls, interior floor, spawns
+    const w = 16;
+    const h = 12;
+    setGridWidth(w);
+    setGridHeight(h);
+    const g = Array.from({ length: h }, () => Array.from({ length: w }, () => 0));
+    // borders
+    for (let x = 0; x < w; x++) { g[0][x] = 1; g[h-1][x] = 1; }
+    for (let y = 1; y < h-1; y++) { g[y][0] = 1; g[y][w-1] = 1; }
+    // interior floor
+    for (let y = 1; y < h-1; y++) for (let x = 1; x < w-1; x++) g[y][x] = 2;
+    // spawns
+    g[2][2] = 3;
+    g[9][13] = 4;
+    setGrid(g);
+    setTitle("Exemple automatique");
+    setDescription("Map generee automatiquement (exemple)");
+    // generate and set as content
+    const cells = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = g[y][x]; if (t && t !== 0) cells.push({ x, y, type: t }); }
+    const mapObj = { name: "Exemple automatique", description: "Map generee automatiquement", width: w, height: h, cells };
+    const json = JSON.stringify(mapObj);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    setGeneratedMapContent(b64);
+    toast.success("Exemple importe et pre-rempli.");
+    // optionally publish automatically
+    if (publishAuto) {
+      publishGeneratedMap(b64);
+    }
+  };
+
+  const publishGeneratedMap = async (overrideContent) => {
+    try {
+      const payloadContent = overrideContent || generatedMapContent || mapContent || null;
+      if (!payloadContent) { toast.error("Aucun contenu genere pour publication."); return; }
+      let cleaned = payloadContent;
+      if (typeof cleaned === "string" && cleaned.startsWith("data:")) {
+        const idx = cleaned.indexOf("base64,");
+        if (idx >= 0) cleaned = cleaned.substring(idx + 7);
+      }
+      await createMap({
+        title: title || "Ma map",
+        description: description || "",
+        status,
+        tags: tags.split(",").map((tagName) => tagName.trim()).filter(Boolean),
+        content_url: cleaned,
+        screenshot_urls: mapScreenshots,
+      });
+      toast.success("Map publiee automatiquement.");
+      setTitle(""); setDescription(""); setStatus("draft"); setTags(""); setMapContent(""); setGeneratedMapContent(""); setMapScreenshots([]);
+      await load();
+    } catch (err) {
+      console.error(err);
+      toast.error("Echec de la publication automatique.");
+    }
+  };
   const [mapScreenshots, setMapScreenshots] = useState([]);
 
   useEffect(() => {
@@ -114,9 +236,38 @@ export default function Maps() {
     }
 
     try {
-      const [content] = await filesToDataUrls([file]);
-      setMapContent(content);
-      toast.success("Contenu map importe.");
+      // If the uploaded file is a JSON map, read as text and encode to base64 (UTF-8)
+      const isJson = file.type === "application/json" || file.name.endsWith(".json");
+      if (isJson) {
+        const text = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsText(file, "utf-8");
+        });
+
+        // validate JSON
+        let parsed = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Fichier JSON invalide");
+        }
+
+        // encode as base64 (UTF-8) so Unity's MapData.FromBase64 can decode it
+        const json = JSON.stringify(parsed);
+        const b64 = btoa(unescape(encodeURIComponent(json)));
+        setMapContent(b64);
+        toast.success("Contenu map (JSON) importe et encodé.");
+      } else {
+        // fallback: read as data URL (e.g., already base64), remove prefix if present
+        const [content] = await filesToDataUrls([file]);
+        // data:*;base64,XXXXX
+        const idx = content.indexOf("base64,");
+        const payload = idx >= 0 ? content.substring(idx + 7) : content;
+        setMapContent(payload);
+        toast.success("Contenu map importe.");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Impossible de charger le contenu map.");
@@ -127,12 +278,24 @@ export default function Maps() {
     e.preventDefault();
 
     try {
+      // Accept either generated editor content or uploaded content
+      if (!generatedMapContent && !mapContent) {
+        toast.error("Ajoute le contenu de la map (fichier JSON) ou utilise l'editeur avant de publier.");
+        return;
+      }
+
+      // Prepare payload content (generated takes precedence)
+      let payloadContent = generatedMapContent || mapContent;
+      if (typeof payloadContent === "string" && payloadContent.startsWith("data:")) {
+        const idx = payloadContent.indexOf("base64,");
+        if (idx >= 0) payloadContent = payloadContent.substring(idx + 7);
+      }
       await createMap({
         title,
         description,
         status,
         tags: tags.split(",").map((tagName) => tagName.trim()).filter(Boolean),
-        content_url: mapContent,
+        content_url: payloadContent,
         screenshot_urls: mapScreenshots,
       });
       toast.success("Map publiee.");
@@ -141,6 +304,7 @@ export default function Maps() {
       setStatus("draft");
       setTags("");
       setMapContent("");
+      setGeneratedMapContent("");
       setMapScreenshots([]);
       await load();
     } catch (error) {
@@ -172,7 +336,10 @@ export default function Maps() {
 
   const handleAddVersion = async (mapId) => {
     try {
-      await addMapVersion(mapId, versionNotes[mapId] || "Update");
+      // If the creator uploaded map content/screenshots in the form, include them in the new version
+      const notes = versionNotes[mapId] || "Update";
+      const payloadContent = generatedMapContent || mapContent || null;
+      await addMapVersion(mapId, notes, payloadContent, mapScreenshots || []);
       toast.success("Nouvelle version ajoutee.");
       setVersionNotes((prev) => ({ ...prev, [mapId]: "" }));
       await load();
@@ -408,8 +575,47 @@ export default function Maps() {
               <label className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
                 Contenu map
                 <input type="file" onChange={handleMapContentUpload} className="mt-2 block w-full text-xs" />
+                <div className="mt-3 flex gap-2">
+                  <button type="button" onClick={() => setShowEditor((s) => !s)} className="rounded-xl bg-purple-500 px-3 py-1 text-sm font-semibold">{showEditor ? 'Fermer l\'editeur' : 'Ouvrir editeur de grille'}</button>
+                  <button type="button" onClick={() => { setMapContent(''); setGeneratedMapContent(''); toast.success('Contenu supprime.'); }} className="rounded-xl bg-red-500 px-3 py-1 text-sm font-semibold">Supprimer contenu</button>
+                  <button type="button" onClick={importExample} className="rounded-xl bg-indigo-500 px-3 py-1 text-sm font-semibold">Importer exemple</button>
+                  <label className="ml-2 flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={publishAuto} onChange={(e)=>setPublishAuto(e.target.checked)} /> Publier automatiquement</label>
+                </div>
               </label>
             </div>
+
+            {showEditor && (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950 p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <label className="text-sm text-slate-300">Width</label>
+                  <input type="number" value={gridWidth} onChange={(e) => setGridWidth(Number(e.target.value))} className="w-20 rounded px-2 text-black" />
+                  <label className="text-sm text-slate-300">Height</label>
+                  <input type="number" value={gridHeight} onChange={(e) => setGridHeight(Number(e.target.value))} className="w-20 rounded px-2 text-black" />
+                  <button type="button" onClick={() => initGrid(gridWidth, gridHeight)} className="rounded-xl bg-cyan-500 px-3 py-1 text-sm font-semibold">Init</button>
+                  <button type="button" onClick={clearGrid} className="rounded-xl bg-yellow-500 px-3 py-1 text-sm font-semibold">Clear</button>
+                  <button type="button" onClick={setEditorAsContent} className="ml-auto rounded-xl bg-emerald-500 px-3 py-1 text-sm font-semibold">Generer et utiliser</button>
+                </div>
+                <div className="mb-2 flex gap-2">
+                  {TileNames.map((n, idx) => (
+                    <button key={n} type="button" onClick={() => setSelectedTile(idx)} className={`px-3 py-1 rounded ${selectedTile===idx? 'ring-2 ring-white':''}`} style={{background: TileColors[idx], color: '#fff'}}>{n}</button>
+                  ))}
+                </div>
+                <div className="overflow-auto" style={{ maxWidth: '100%', maxHeight: 400 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${gridWidth}, 24px)`, gap: 2 }}>
+                    {Array.from({ length: gridHeight }).map((_, y) => (
+                      <React.Fragment key={y}>
+                        {Array.from({ length: gridWidth }).map((__, x) => {
+                          const val = grid?.[y]?.[x] ?? 0;
+                          return (
+                            <button key={`${x}-${y}`} type="button" onClick={() => paintCell(x, y)} style={{ width: 24, height: 24, background: TileColors[val], borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)' }} />
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {mapScreenshots.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {mapScreenshots.map((shot, index) => (

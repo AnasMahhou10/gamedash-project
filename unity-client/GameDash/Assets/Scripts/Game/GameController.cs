@@ -61,9 +61,43 @@ public class GameController : MonoBehaviour
         modeText.text   = $"Mode : {GameManager.Instance.CurrentMode.ToUpper()}";
         statusText.text = "Combat en cours !";
 
+        // If a pending map was provided by the lobby, build it
+        if (MapTestController.PendingMap != null)
+        {
+            BuildMap(MapTestController.PendingMap);
+            statusText.text = $"Map chargée ({MapTestController.PendingMap.cells.Count} tuiles)";
+        }
+
         UpdateHUD();
         endPanel.SetActive(false);
         surrenderButton.onClick.AddListener(OnSurrender);
+    }
+
+    // Reuse BuildMap logic similar to MapTestController
+    private GameObject _mapRoot;
+    private void BuildMap(MapData data)
+    {
+        if (data == null) return;
+        _mapRoot = new GameObject("MapRoot");
+
+        float centerX = (data.width  * 1f) / 2f;
+        float centerY = (data.height * 1f) / 2f;
+        Camera.main.orthographicSize = Mathf.Max(data.width, data.height) * 1f / 2f;
+        Camera.main.transform.position = new Vector3(centerX, centerY, -10f);
+        Camera.main.backgroundColor = new Color(0.15f, 0.15f, 0.20f);
+
+        foreach (var cell in data.cells)
+        {
+            GameObject prefab = GetPrefabForType(cell.type);
+            if (prefab == null) continue;
+
+            Vector3 pos = new Vector3(cell.x * 1f, cell.y * 1f, 0f);
+            var tile = Instantiate(prefab, pos, Quaternion.identity, _mapRoot.transform);
+            tile.name = $"tile_{cell.x}_{cell.y}_t{cell.type}";
+
+            if (cell.type == 3) tile.tag = "SpawnP1";
+            if (cell.type == 4) tile.tag = "SpawnP2";
+        }
     }
 
     void Update()

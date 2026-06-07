@@ -199,6 +199,8 @@ public class UserProfile
     public int    level;
     public int    xp;
     public string status;
+    public int    soft_currency;
+    public int    hard_currency;
 }
 
 [Serializable] public class JoinQueueRequest { public string mode; }
@@ -218,6 +220,7 @@ public class MatchData
     public int    opponent;
     public string mode;
     public string status;
+    public int    map_id;
 }
 
 [Serializable]

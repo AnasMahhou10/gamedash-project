@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     public int    CurrentMatchId    { get; private set; }
     public int    CurrentOpponentId { get; private set; }
     public string CurrentMode       { get; private set; }
+    public int    CurrentMapId      { get; private set; }
     public bool   PlayerWon         { get; private set; }
 
     public UserProfile         LocalPlayer     { get; private set; }
@@ -106,6 +107,7 @@ public class GameManager : MonoBehaviour
                         CurrentMatchId    = resp.match.match_id;
                         CurrentOpponentId = resp.match.opponent;
                         CurrentMode       = resp.match.mode;
+                        CurrentMapId      = resp.match.map_id;
                         StartGame();
                     }
                 },
@@ -116,6 +118,33 @@ public class GameManager : MonoBehaviour
 
     private void StartGame()
     {
+        // If a map is assigned, fetch it first then load the scene so the GameController can build it
+        if (CurrentMapId > 0)
+        {
+            StartCoroutine(ApiManager.Instance.GetMap(CurrentMapId, (mapResp) => {
+                try
+                {
+                    // set pending map for the scene
+                    MapTestController.PendingMap = MapData.FromBase64(mapResp.content_url);
+                    MapTestController.PendingMapId = mapResp.id;
+                    MapTestController.PendingMapTitle = mapResp.title ?? "Map";
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning("Failed to parse map from API: " + ex.Message);
+                    MapTestController.PendingMap = null;
+                    MapTestController.PendingMapId = -1;
+                }
+                TransitionTo(GameState.InGame);
+                SceneManager.LoadScene(gameScene);
+            }, (err) => {
+                Debug.LogWarning("GetMap failed: " + err + " — loading game without map.");
+                TransitionTo(GameState.InGame);
+                SceneManager.LoadScene(gameScene);
+            }));
+            return;
+        }
+
         TransitionTo(GameState.InGame);
         SceneManager.LoadScene(gameScene);
     }
@@ -140,8 +169,19 @@ public class GameManager : MonoBehaviour
             (resp) =>
             {
                 LastMatchResult = resp;
-                TransitionTo(GameState.Results);
-                SceneManager.LoadScene(resultsScene);
+                // Refresh local profile so ELO / XP / level are up-to-date
+                // We update LocalPlayer from the server then show results.
+                StartCoroutine(ApiManager.Instance.GetMe((profile) => {
+                    SetLocalPlayer(profile);
+                    LastMatchResult = resp;
+                    TransitionTo(GameState.Results);
+                    SceneManager.LoadScene(resultsScene);
+                }, (err) => {
+                    Debug.LogWarning("Refresh profile failed: " + err);
+                    // fallback: still show results
+                    TransitionTo(GameState.Results);
+                    SceneManager.LoadScene(resultsScene);
+                }));
             },
             (err) => Debug.LogError("FinishMatch: " + err)
         );

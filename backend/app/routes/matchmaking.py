@@ -9,6 +9,7 @@ from app.core.dependencies import get_current_user
 from app.core.ws_manager import manager
 from app.database import get_db
 from app.models.match import Match
+from app.models.map import Map
 from app.models.matchmaking_settings import MatchmakingSettings
 from app.models.queue import QueuePlayer
 from app.models.rank_settings import RankSettings
@@ -127,6 +128,8 @@ def serialize_match(match: Match, current_user: User, db: Session):
         "status": match.status,
         "result": result,
         "mode": match.mode,
+        "map_id": match.map_id,
+        "map_title": db.query(Map).filter(Map.id == match.map_id).first().title if match.map_id else None,
         "date": match.created_at,
         "finished_at": match.finished_at,
         "duration_seconds": match.duration_seconds,
@@ -219,6 +222,18 @@ async def try_create_match_for_mode(db: Session, mode: str, settings: Matchmakin
         mode=mode,
         status="ongoing",
     )
+    # choose a default map for the match: prefer featured published maps, else most tested
+    try:
+        candidate_map = (
+            db.query(Map)
+            .filter(Map.hidden.is_(False), Map.status == "published")
+            .order_by(Map.featured.desc(), Map.tests_count.desc())
+            .first()
+        )
+        if candidate_map:
+            match.map_id = candidate_map.id
+    except Exception:
+        pass
     db.add(match)
 
     first_queue.status = "matched"
@@ -237,6 +252,7 @@ async def try_create_match_for_mode(db: Session, mode: str, settings: Matchmakin
             "opponent": second_user.id,
             "mode": mode,
             "status": "in_game",
+            "map_id": match.map_id,
         },
     )
     await manager.send_to_user(
@@ -247,6 +263,7 @@ async def try_create_match_for_mode(db: Session, mode: str, settings: Matchmakin
             "opponent": first_user.id,
             "mode": mode,
             "status": "in_game",
+            "map_id": match.map_id,
         },
     )
 
@@ -314,6 +331,7 @@ def get_current_match(user: User = Depends(get_current_user), db: Session = Depe
             "opponent": opponent_id,
             "mode": match.mode,
             "status": "in_game",
+            "map_id": match.map_id,
             "created_at": match.created_at,
         }
     }
@@ -542,7 +560,7 @@ def match_result(match_id: int, winner_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/finish")
-async def finish_match(match_id: int, winner_id: int, db: Session = Depends(get_db)):
+async def finish_match(match_id: int, winner_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
         return {"message": "Match not found"}
@@ -590,10 +608,28 @@ async def finish_match(match_id: int, winner_id: int, db: Session = Depends(get_
         },
     )
 
+    # Prepare a response with progression for the calling user
+    mmr_change = 0
+    xp_gained = 0
+    coins_gained = 0
+    reward_settings = get_reward_settings(db)
+
+    if user.id == match.player1_id:
+        mmr_change = match.player1_elo_change or 0
+        xp_gained = match.player1_xp_gain or 0
+        coins_gained = reward_settings.win_currency if winner_id == user.id else reward_settings.loss_currency
+    elif user.id == match.player2_id:
+        mmr_change = match.player2_elo_change or 0
+        xp_gained = match.player2_xp_gain or 0
+        coins_gained = reward_settings.win_currency if winner_id == user.id else reward_settings.loss_currency
+
     return {
         "message": "Match finished",
         "match_id": match.id,
         "winner": winner_id,
         "mode": match.mode,
         "duration_seconds": match.duration_seconds,
+        "mmr_change": mmr_change,
+        "xp_gained": xp_gained,
+        "coins_gained": coins_gained,
     }
