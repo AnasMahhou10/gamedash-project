@@ -480,7 +480,7 @@ export default function Maps() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl text-purple-300 drop-shadow-[0_0_20px_rgba(192,132,252,0.35)] sm:text-4xl">
-              EloVerse Community Hub
+              GameDash Community Hub
             </h1>
             <p className="mt-2 max-w-3xl text-slate-400">
               Explore les maps communautaires, publie du vrai contenu, suis les tests et

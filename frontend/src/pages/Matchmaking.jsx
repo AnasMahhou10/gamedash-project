@@ -234,7 +234,7 @@ export default function Matchmaking() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
-              EloVerse Matchmaking
+              GameDash Matchmaking
             </h1>
             <p className="mt-2 max-w-3xl text-slate-400">
               Choisis une file, surveille l'etat des joueurs et lance une recherche
