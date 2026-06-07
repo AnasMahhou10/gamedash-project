@@ -40,8 +40,6 @@ Bloc fonctionnel porte par Amina:
 - module maps / UGC avec versions, votes, favoris, commentaires, tests, signalements
 - boutique / economie virtuelle / inventaire
 
-## Axes complementaires du cahier des charges
-
 ### Produit / UX
 
 Bloc fonctionnel porte par Anas :
