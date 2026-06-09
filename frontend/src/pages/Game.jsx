@@ -16,7 +16,6 @@ export default function Game() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mode, setMode] = useState(null);
   const [mapId, setMapId] = useState(null);
-  const [unityLaunchAttempted, setUnityLaunchAttempted] = useState(false);
 
   const buildUnityMatchDeeplink = (matchPayload) => {
     const token = localStorage.getItem("token");
@@ -32,6 +31,10 @@ export default function Game() {
       token,
     });
 
+    if (currentUser?.id) {
+      params.set("player_id", String(currentUser.id));
+    }
+
     if (matchPayload.map_id) {
       params.set("map_id", String(matchPayload.map_id));
     }
@@ -39,29 +42,14 @@ export default function Game() {
     return `gamedash://match?${params.toString()}`;
   };
 
-  const launchUnityMatch = (matchPayload, direct = false) => {
+  const launchUnityMatch = (matchPayload) => {
     const deeplink = buildUnityMatchDeeplink(matchPayload);
 
     if (!deeplink) {
       return false;
     }
 
-    if (direct) {
-      window.location.href = deeplink;
-      setUnityLaunchAttempted(true);
-      return true;
-    }
-
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = deeplink;
-    document.body.appendChild(iframe);
-
-    setTimeout(() => {
-      iframe.remove();
-    }, 3000);
-
-    setUnityLaunchAttempted(true);
+    window.location.href = deeplink;
     toast.success("Ouverture de Unity avec la map du match...");
     return true;
   };
@@ -199,11 +187,11 @@ export default function Game() {
                       opponent,
                       mode,
                       map_id: mapId,
-                    }, true)
+                    })
                   }
                   className="nav-button nav-button-cyan"
                 >
-                  {unityLaunchAttempted ? "Relancer Unity" : "Ouvrir Unity"}
+                  Relancer Unity
                 </button>
 
                 <button

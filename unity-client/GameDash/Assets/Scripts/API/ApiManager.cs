@@ -20,7 +20,12 @@ public class ApiManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        _token = PlayerPrefs.GetString("jwt_token", "");
+        _token = GetLaunchToken();
+
+        if (string.IsNullOrEmpty(_token))
+        {
+            _token = PlayerPrefs.GetString("jwt_token", "");
+        }
     }
 
     // ── AUTH ──────────────────────────────────────────────────────
@@ -58,9 +63,55 @@ public class ApiManager : MonoBehaviour
     public void InjectToken(string token)
     {
         _token = token;
-        PlayerPrefs.SetString("jwt_token", token);
-        PlayerPrefs.Save();
-        Debug.Log("[ApiManager] Token injecté via deeplink.");
+        Debug.Log("[ApiManager] Token injecté via deeplink pour cette fenêtre.");
+    }
+
+    private string GetLaunchToken()
+    {
+        string token = ExtractTokenFromUrl(Application.absoluteURL);
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            return token;
+        }
+
+        foreach (string arg in Environment.GetCommandLineArgs())
+        {
+            token = ExtractTokenFromUrl(arg);
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                return token;
+            }
+        }
+
+        return "";
+    }
+
+    private string ExtractTokenFromUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url) ||
+            !url.StartsWith("gamedash://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "";
+        }
+
+        int qIdx = url.IndexOf('?');
+        if (qIdx < 0) return "";
+
+        string queryString = url.Substring(qIdx + 1);
+        foreach (string pair in queryString.Split('&'))
+        {
+            int eqIdx = pair.IndexOf('=');
+            if (eqIdx < 0) continue;
+
+            string key = Uri.UnescapeDataString(pair.Substring(0, eqIdx));
+            if (!key.Equals("token", StringComparison.OrdinalIgnoreCase)) continue;
+
+            return Uri.UnescapeDataString(pair.Substring(eqIdx + 1));
+        }
+
+        return "";
     }
 
     // ── MATCHMAKING ───────────────────────────────────────────────

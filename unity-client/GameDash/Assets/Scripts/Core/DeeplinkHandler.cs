@@ -145,8 +145,19 @@ public class DeeplinkHandler : MonoBehaviour
     {
         // 1. Charger le profil
         bool ok = false;
+        int expectedPlayerId = 0;
         yield return ApiManager.Instance.GetMe(
-            (profile) => { GameManager.Instance.SetLocalPlayer(profile); ok = true; },
+            (profile) =>
+            {
+                if (expectedPlayerId > 0 && profile.id != expectedPlayerId)
+                {
+                    Debug.LogError($"[Deeplink] Mauvais joueur: attendu {expectedPlayerId}, reçu {profile.id}");
+                    return;
+                }
+
+                GameManager.Instance.SetLocalPlayer(profile);
+                ok = true;
+            },
             (err)     => Debug.LogError("[Deeplink] GetMe échoué : " + err)
         );
 
@@ -215,8 +226,14 @@ public class DeeplinkHandler : MonoBehaviour
         }
 
         query.TryGetValue("mode", out string mode);
+        int expectedPlayerId = 0;
+        if (query.TryGetValue("player_id", out string playerIdStr))
+        {
+            int.TryParse(playerIdStr, out expectedPlayerId);
+        }
+
         ApiManager.Instance.InjectToken(token);
-        StartCoroutine(LoadProfileThenMatch(matchId, opponentId, mode, mapId));
+        StartCoroutine(LoadProfileThenMatch(matchId, opponentId, mode, mapId, expectedPlayerId));
     }
 
     private void HandleQueueDeeplink(string url)
@@ -253,7 +270,7 @@ public class DeeplinkHandler : MonoBehaviour
         GameManager.Instance.StartMatchmaking(mode);
     }
 
-    private IEnumerator LoadProfileThenMatch(int matchId, int opponentId, string mode, int mapId)
+    private IEnumerator LoadProfileThenMatch(int matchId, int opponentId, string mode, int mapId, int expectedPlayerId = 0)
     {
         bool ok = false;
         yield return ApiManager.Instance.GetMe(
@@ -262,6 +279,13 @@ public class DeeplinkHandler : MonoBehaviour
         );
 
         if (!ok) { Application.Quit(); yield break; }
+
+        if (expectedPlayerId > 0 && GameManager.Instance.LocalPlayer.id != expectedPlayerId)
+        {
+            Debug.LogError($"[Deeplink] Mauvais joueur: attendu {expectedPlayerId}, reçu {GameManager.Instance.LocalPlayer.id}");
+            Application.Quit();
+            yield break;
+        }
 
         GameManager.Instance.StartMatchFromDeeplink(matchId, opponentId, mode, mapId);
     }
