@@ -3,13 +3,13 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// DeeplinkHandler — gère 2 deeplinks :
-///   gamedash://testmap?map_id=42&token=xxx  → ouvre MapTest avec la map
-///   gamedash://editor?token=xxx             → ouvre MapEditor directement
-///
-/// À attacher sur le GameObject "GameDash" (même que ApiManager + GameManager).
-/// </summary>
+
+
+
+
+
+
+
 public class DeeplinkHandler : MonoBehaviour
 {
     [Header("Scènes")]
@@ -63,9 +63,9 @@ public class DeeplinkHandler : MonoBehaviour
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Lecture des arguments de lancement
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void ParseCommandLineArgs()
     {
@@ -73,7 +73,7 @@ public class DeeplinkHandler : MonoBehaviour
 
         foreach (string arg in args)
         {
-            // Deeplink test de map
+            
             if (arg.StartsWith("gamedash://testmap", StringComparison.OrdinalIgnoreCase))
             {
                 Debug.Log("[Deeplink] TestMap détecté : " + arg);
@@ -88,7 +88,7 @@ public class DeeplinkHandler : MonoBehaviour
                 return;
             }
 
-            // Deeplink éditeur de maps
+            
             if (arg.StartsWith("gamedash://editor", StringComparison.OrdinalIgnoreCase))
             {
                 Debug.Log("[Deeplink] Editor détecté : " + arg);
@@ -97,14 +97,14 @@ public class DeeplinkHandler : MonoBehaviour
             }
         }
 
-        // Aucun deeplink → flux normal (Login)
+        
         Debug.Log("[Deeplink] Aucun deeplink, démarrage normal.");
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Deeplink : tester une map
-    // gamedash://testmap?map_id=42&token=xxx
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
+    
 
     private void HandleTestMapDeeplink(string url)
     {
@@ -129,7 +129,7 @@ public class DeeplinkHandler : MonoBehaviour
 
     private IEnumerator LoadProfileThenMap(int mapId)
     {
-        // 1. Charger le profil
+        
         bool ok = false;
         int expectedPlayerId = 0;
         yield return ApiManager.Instance.GetMe(
@@ -149,7 +149,7 @@ public class DeeplinkHandler : MonoBehaviour
 
         if (!ok) { Application.Quit(); yield break; }
 
-        // 2. Charger la map
+        
         yield return ApiManager.Instance.GetMap(mapId,
             (mapResp) =>
             {
@@ -276,10 +276,10 @@ public class DeeplinkHandler : MonoBehaviour
         GameManager.Instance.StartMatchFromDeeplink(matchId, opponentId, mode, mapId);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Deeplink : ouvrir l'éditeur de maps
-    // gamedash://editor?token=xxx
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
+    
 
     private void HandleEditorDeeplink(string url)
     {

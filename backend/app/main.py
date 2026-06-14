@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import SECRET_KEY
-from app.database import Base, engine, ensure_schema
+from app.database import Base, engine, ensure_schema, ensure_modes_enabled,ensure_default_maps
 from app.models import (  # noqa: F401
     economy_settings,
     inventory_item,
@@ -22,10 +22,12 @@ from app.models import (  # noqa: F401
     store_pack,
     virtual_transaction,
 )
-from app.routes import admin, auth, dashboard, maps, matchmaking, matchmaking_ws, shop, user
+from app.routes import admin, auth, dashboard, maps, matchmaking, matchmaking_ws, shop, user, game_ws
 
 Base.metadata.create_all(bind=engine)
 ensure_schema()
+ensure_modes_enabled()
+ensure_default_maps()
 
 app = FastAPI()
 
@@ -48,6 +50,7 @@ app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(matchmaking.router, prefix="/matchmaking", tags=["Matchmaking"])
 app.include_router(maps.router, tags=["Maps"])
 app.include_router(matchmaking_ws.router)
+app.include_router(game_ws.router)
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(shop.router, prefix="/shop", tags=["Shop"])
 

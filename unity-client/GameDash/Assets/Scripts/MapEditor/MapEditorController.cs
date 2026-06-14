@@ -4,50 +4,50 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Éditeur de maps en grille 2D.
-///
-/// Fonctionnement :
-/// ─ Une grille NxM de boutons représente le niveau.
-/// ─ Le joueur sélectionne un "pinceau" (mur, sol, spawn, powerup) et clique sur les cases.
-/// ─ Bouton "Publier" → sérialise la grille en JSON base64 → POST /maps/ via ApiManager.
-/// ─ Bouton "Nouvelle version" → POST /maps/version si la map a déjà été publiée.
-///
-/// Setup dans Unity :
-/// ─ Crée un Panel "Grid" et assigne-le à gridContainer.
-/// ─ Crée un prefab Button avec Image enfant et assigne-le à cellButtonPrefab.
-/// ─ Remplis les champs UI.
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public class MapEditorController : MonoBehaviour
 {
-    // ── Grille ──────────────────────────────────────────────────
+    
     [Header("Grille")]
-    public Transform  gridContainer;   // LayoutGroup Grid
+    public Transform  gridContainer;   
     public GameObject cellButtonPrefab;
     public int        gridWidth  = 16;
     public int        gridHeight = 12;
 
-    // ── Palette de couleurs par type ────────────────────────────
+    
     private static readonly Color[] TileColors = new Color[]
     {
-        new Color(0.15f, 0.15f, 0.15f),  // 0 vide       – gris foncé
-        new Color(0.30f, 0.20f, 0.10f),  // 1 mur        – marron
-        new Color(0.20f, 0.60f, 0.20f),  // 2 sol        – vert
-        new Color(0.10f, 0.50f, 0.90f),  // 3 spawn P1   – bleu
-        new Color(0.90f, 0.20f, 0.20f),  // 4 spawn P2   – rouge
-        new Color(1.00f, 0.85f, 0.00f),  // 5 powerup    – jaune
+        new Color(0.15f, 0.15f, 0.15f),  
+        new Color(0.30f, 0.20f, 0.10f),  
+        new Color(0.20f, 0.60f, 0.20f),  
+        new Color(0.10f, 0.50f, 0.90f),  
+        new Color(0.90f, 0.20f, 0.20f),  
+        new Color(1.00f, 0.85f, 0.00f),  
     };
 
     private static readonly string[] TileNames = { "Vide", "Mur", "Sol", "Spawn J1", "Spawn J2", "Powerup" };
 
-    // ── UI ──────────────────────────────────────────────────────
+    
     [Header("UI – Meta map")]
     public TMP_InputField mapNameInput;
     public TMP_InputField mapDescInput;
     public TMP_InputField versionNotesInput;
 
     [Header("UI – Palette")]
-    public Transform  paletteContainer;  // Horizontal Layout avec les boutons de palette
+    public Transform  paletteContainer;  
     public GameObject paletteButtonPrefab;
 
     [Header("UI – Actions")]
@@ -61,15 +61,15 @@ public class MapEditorController : MonoBehaviour
     [Header("UI – Infos map publiée")]
     public TMP_Text mapIdText;
 
-    // ── État interne ─────────────────────────────────────────────
+    
     private int[,]         _grid;
     private Button[,]      _cellButtons;
-    private int            _selectedTile = 1;   // pinceau actif
-    private int            _publishedMapId = -1; // -1 = jamais publié
+    private int            _selectedTile = 1;   
+    private int            _publishedMapId = -1; 
 
-    // ──────────────────────────────────────────────────────────────
-    // Init
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     void Start()
     {
@@ -90,9 +90,9 @@ public class MapEditorController : MonoBehaviour
         mapIdText.text  = "";
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Construction de la palette
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void BuildPalette()
     {
@@ -110,9 +110,9 @@ public class MapEditorController : MonoBehaviour
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Construction de la grille
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void BuildGrid()
     {
@@ -133,9 +133,9 @@ public class MapEditorController : MonoBehaviour
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Peinture
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void PaintCell(int x, int y)
     {
@@ -166,9 +166,9 @@ public class MapEditorController : MonoBehaviour
 
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Sérialisation
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private MapData BuildMapData()
     {
@@ -180,15 +180,15 @@ public class MapEditorController : MonoBehaviour
 
         for (int y = 0; y < gridHeight; y++)
             for (int x = 0; x < gridWidth; x++)
-                if (_grid[x, y] != 0)    // on ne stocke pas les cases vides
+                if (_grid[x, y] != 0)    
                     data.cells.Add(new MapCell { x = x, y = y, type = _grid[x, y] });
 
         return data;
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Publication → POST /maps/
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void OnPublish()
     {
@@ -224,9 +224,9 @@ public class MapEditorController : MonoBehaviour
         ));
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Nouvelle version → POST /maps/version
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void OnNewVersion()
     {
@@ -260,9 +260,9 @@ public class MapEditorController : MonoBehaviour
         ));
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private bool ValidateForm()
     {

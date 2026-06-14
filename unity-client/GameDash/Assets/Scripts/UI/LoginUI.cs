@@ -3,10 +3,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Interface de connexion.
-/// Attache ce script au Canvas de la scène Login.
-/// </summary>
+
+
+
+
 public class LoginUI : MonoBehaviour
 {
     [Header("Champs de formulaire")]
@@ -25,7 +25,7 @@ public class LoginUI : MonoBehaviour
         loginButton.onClick.AddListener(OnLoginClicked);
         loadingSpinner.SetActive(false);
 
-        // Si un token est déjà stocké, on tente un auto-login
+        
         if (ApiManager.Instance.IsAuthenticated)
             StartCoroutine(TryAutoLogin());
     }
@@ -53,7 +53,7 @@ public class LoginUI : MonoBehaviour
             (resp) =>
             {
                 ShowStatus("Connecté !", Color.green);
-                // Charger le profil puis démarrer
+                
                 StartCoroutine(LoadProfileAndProceed());
             },
             (err) =>

@@ -2,20 +2,20 @@
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>
-/// Menu GameDash → Fix Tile Colors
-/// Corrige les couleurs de tous les prefabs de tuiles pour qu'ils soient visibles.
-/// </summary>
+
+
+
+
 public static class TileColorFixer
 {
     [MenuItem("GameDash/Fix Tile Colors")]
     public static void FixTileColors()
     {
-        FixPrefab("Assets/Prefabs/WallTile.prefab",    new Color(0.55f, 0.35f, 0.15f)); // marron
-        FixPrefab("Assets/Prefabs/FloorTile.prefab",   new Color(0.20f, 0.75f, 0.25f)); // vert vif
-        FixPrefab("Assets/Prefabs/SpawnP1Tile.prefab", new Color(0.10f, 0.55f, 0.95f)); // bleu vif
-        FixPrefab("Assets/Prefabs/SpawnP2Tile.prefab", new Color(0.95f, 0.20f, 0.20f)); // rouge vif
-        FixPrefab("Assets/Prefabs/PowerupTile.prefab", new Color(1.00f, 0.90f, 0.00f)); // jaune vif
+        FixPrefab("Assets/Prefabs/WallTile.prefab",    new Color(0.55f, 0.35f, 0.15f)); 
+        FixPrefab("Assets/Prefabs/FloorTile.prefab",   new Color(0.20f, 0.75f, 0.25f)); 
+        FixPrefab("Assets/Prefabs/SpawnP1Tile.prefab", new Color(0.10f, 0.55f, 0.95f)); 
+        FixPrefab("Assets/Prefabs/SpawnP2Tile.prefab", new Color(0.95f, 0.20f, 0.20f)); 
+        FixPrefab("Assets/Prefabs/PowerupTile.prefab", new Color(1.00f, 0.90f, 0.00f)); 
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -32,7 +32,7 @@ public static class TileColorFixer
         var sr = prefab.GetComponent<SpriteRenderer>();
         if (sr == null) { Debug.LogWarning($"SpriteRenderer introuvable sur : {path}"); return; }
 
-        // Crée un sprite blanc carré visible
+        
         var tex = new Texture2D(32, 32);
         var pixels = new Color[32 * 32];
         for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.white;

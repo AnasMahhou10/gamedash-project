@@ -31,18 +31,18 @@ public class MapTestController : MonoBehaviour
     public Button     closeSummaryButton;
 
     [Header("Durée du test")]
-    public float testDuration = 180f;   // 3 minutes
+    public float testDuration = 180f;   
 
     private float  _elapsed     = 0f;
     private bool   _testEnded   = false;
 
-    private GameObject _mapRoot;                // parent de tous les tiles
+    private GameObject _mapRoot;                
 
      
 
     void Start()
     {
-        // Affiche le titre
+        
         mapTitleText.text = PendingMapTitle;
         statusText.text   = "Test en cours...";
 
@@ -57,15 +57,15 @@ public class MapTestController : MonoBehaviour
         }
         else
         {
-            // Aucune map reçue : affiche un niveau de démonstration vide
+            
             statusText.text = "Aucune map reçue — mode démo";
             BuildDemoMap();
         }
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Update — timer
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     void Update()
     {
@@ -81,23 +81,23 @@ public class MapTestController : MonoBehaviour
             EndTest(completed: false);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Construction de la map depuis MapData
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void BuildMap(MapData data)
     {
-        // Crée un parent pour pouvoir tout nettoyer facilement
+        
         _mapRoot = new GameObject("MapRoot");
 
-        // Centre la caméra sur la map
+        
         float centerX = (data.width  * tileSize) / 2f;
         float centerY = (data.height * tileSize) / 2f;
         Camera.main.orthographicSize = Mathf.Max(data.width, data.height) * tileSize / 2f;
         Camera.main.transform.position = new Vector3(centerX, centerY, -10f);
         Camera.main.backgroundColor = new Color(0.15f, 0.15f, 0.20f);
 
-        // Instancie chaque tuile
+        
         foreach (var cell in data.cells)
         {
             GameObject prefab = GetPrefabForType(cell.type);
@@ -107,7 +107,7 @@ public class MapTestController : MonoBehaviour
             var tile = Instantiate(prefab, pos, Quaternion.identity, _mapRoot.transform);
             tile.name = $"tile_{cell.x}_{cell.y}_t{cell.type}";
 
-            // Tag les spawns pour que le joueur puisse s'y placer
+            
             if (cell.type == 3) tile.tag = "SpawnP1";
             if (cell.type == 4) tile.tag = "SpawnP2";
         }
@@ -118,11 +118,11 @@ public class MapTestController : MonoBehaviour
     Color[] colors = new Color[]
     {
         Color.clear,
-        new Color(0.55f, 0.35f, 0.15f), // mur marron
-        new Color(0.20f, 0.75f, 0.25f), // sol vert
-        new Color(0.10f, 0.55f, 0.95f), // spawn J1 bleu
-        new Color(0.95f, 0.20f, 0.20f), // spawn J2 rouge
-        new Color(1.00f, 0.90f, 0.00f), // powerup jaune
+        new Color(0.55f, 0.35f, 0.15f), 
+        new Color(0.20f, 0.75f, 0.25f), 
+        new Color(0.10f, 0.55f, 0.95f), 
+        new Color(0.95f, 0.20f, 0.20f), 
+        new Color(1.00f, 0.90f, 0.00f), 
     };
 
     if (type <= 0 || type >= colors.Length) return null;
@@ -146,24 +146,24 @@ public class MapTestController : MonoBehaviour
     private void BuildDemoMap()
     {
         var demoData = new MapData("Démo", "", 16, 12);
-        // Bordures
+        
         for (int x = 0; x < 16; x++) { demoData.cells.Add(new MapCell{x=x,y=0,type=1}); demoData.cells.Add(new MapCell{x=x,y=11,type=1}); }
         for (int y = 1; y < 11; y++) { demoData.cells.Add(new MapCell{x=0,y=y,type=1}); demoData.cells.Add(new MapCell{x=15,y=y,type=1}); }
-        // Sol intérieur
+        
         for (int y = 1; y < 11; y++)
             for (int x = 1; x < 15; x++)
                 demoData.cells.Add(new MapCell{x=x,y=y,type=2});
-        // Spawns
+        
         demoData.cells.Add(new MapCell{x=2, y=2, type=3});
         demoData.cells.Add(new MapCell{x=13,y=9, type=4});
         BuildMap(demoData);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Fin de test
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
-    /// <summary>Appelé par la logique de jeu quand le joueur atteint la sortie.</summary>
+    
     public void OnPlayerCompletedMap()
     {
 
@@ -185,7 +185,7 @@ public class MapTestController : MonoBehaviour
 
         statusText.text = completed ? "Map terminée !" : "Test terminé.";
 
-        // Envoyer les stats à l'API
+        
         if (PendingMapId >= 0)
             StartCoroutine(SubmitTest(PendingMapId, durationSeconds, completionRate, completed));
         else
@@ -202,9 +202,9 @@ public class MapTestController : MonoBehaviour
         ShowSummary(duration, completion, completed, resultMsg);
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Écran de résumé
-    // ──────────────────────────────────────────────────────────────
+    
+    
+    
 
     private void ShowSummary(int duration, float completion, bool completed, string apiMsg)
     {
@@ -224,13 +224,13 @@ public class MapTestController : MonoBehaviour
 
     private void OnCloseSummary()
     {
-        // Nettoyer les données statiques
+        
         PendingMap      = null;
         PendingMapId    = -1;
         PendingMapTitle = "Map sans titre";
 
-        // Si on vient du deeplink, le GameManager n'a pas de lobby → fermer
-        // Sinon, retourner au lobby
+        
+        
         if (GameManager.Instance.LocalPlayer != null)
             GameManager.Instance.GoToLobby();
         else

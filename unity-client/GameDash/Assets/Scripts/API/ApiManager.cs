@@ -13,7 +13,8 @@ public class ApiManager : MonoBehaviour
     public string baseUrl = "http://127.0.0.1:8000";
 
     private string _token;
-    public bool IsAuthenticated => !string.IsNullOrEmpty(_token);
+    public bool   IsAuthenticated => !string.IsNullOrEmpty(_token);
+    public string Token => _token;
 
     void Awake()
     {
@@ -22,8 +23,6 @@ public class ApiManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         _token = GetLaunchToken();
     }
-
-    // ── AUTH ──────────────────────────────────────────────────────
 
     public IEnumerator Login(string email, string password,
         Action<LoginResponse> onSuccess, Action<string> onError)
@@ -45,67 +44,52 @@ public class ApiManager : MonoBehaviour
         }, onError);
     }
 
-    public void Logout()
-    {
-        _token = "";
-    }
+    public void Logout() { _token = ""; }
 
-    /// <summary>Injecte un token JWT directement (utilisé par le deeplink).</summary>
     public void InjectToken(string token)
     {
         _token = token;
-        Debug.Log("[ApiManager] Token injecté via deeplink pour cette fenêtre.");
+        Debug.Log("[ApiManager] Token injecté via deeplink.");
     }
 
     private string GetLaunchToken()
     {
         string token = ExtractTokenFromUrl(Application.absoluteURL);
-
-        if (!string.IsNullOrEmpty(token))
-        {
-            return token;
-        }
-
+        if (!string.IsNullOrEmpty(token)) return token;
         foreach (string arg in Environment.GetCommandLineArgs())
         {
             token = ExtractTokenFromUrl(arg);
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                return token;
-            }
+            if (!string.IsNullOrEmpty(token)) return token;
         }
-
         return "";
     }
 
     private string ExtractTokenFromUrl(string url)
     {
-        if (string.IsNullOrEmpty(url) ||
-            !url.StartsWith("gamedash://", StringComparison.OrdinalIgnoreCase))
-        {
+        if (string.IsNullOrEmpty(url) || !url.StartsWith("gamedash://", StringComparison.OrdinalIgnoreCase))
             return "";
-        }
-
         int qIdx = url.IndexOf('?');
         if (qIdx < 0) return "";
-
-        string queryString = url.Substring(qIdx + 1);
-        foreach (string pair in queryString.Split('&'))
+        foreach (string pair in url.Substring(qIdx + 1).Split('&'))
         {
             int eqIdx = pair.IndexOf('=');
             if (eqIdx < 0) continue;
-
             string key = Uri.UnescapeDataString(pair.Substring(0, eqIdx));
-            if (!key.Equals("token", StringComparison.OrdinalIgnoreCase)) continue;
-
-            return Uri.UnescapeDataString(pair.Substring(eqIdx + 1));
+            if (key.Equals("token", StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(pair.Substring(eqIdx + 1));
         }
-
         return "";
     }
 
-    // ── MATCHMAKING ───────────────────────────────────────────────
+    public IEnumerator GetUserPseudo(int userId,
+        Action<string> onSuccess, Action<string> onError)
+    {
+        yield return Get($"/users/{userId}/pseudo", (json) =>
+        {
+            var resp = JsonUtility.FromJson<PseudoResponse>(json);
+            onSuccess?.Invoke(resp.pseudo);
+        }, onError);
+    }
 
     public IEnumerator JoinQueue(string mode,
         Action<QueueResponse> onSuccess, Action<string> onError)
@@ -133,27 +117,23 @@ public class ApiManager : MonoBehaviour
     public IEnumerator PostMatchResult(int matchId, int winnerId,
         Action onSuccess, Action<string> onError)
     {
-        string url = $"/matchmaking/result?match_id={matchId}&winner_id={winnerId}";
-        yield return Post(url, "", true, (_) => onSuccess?.Invoke(), onError);
+        yield return Post($"/matchmaking/result?match_id={matchId}&winner_id={winnerId}", "", true,
+            (_) => onSuccess?.Invoke(), onError);
     }
 
     public IEnumerator FinishMatch(int matchId, int winnerId,
         Action<FinishMatchResponse> onSuccess, Action<string> onError)
     {
-        string url = $"/matchmaking/finish?match_id={matchId}&winner_id={winnerId}";
-        yield return Post(url, "", true, (json) =>
+        yield return Post($"/matchmaking/finish?match_id={matchId}&winner_id={winnerId}", "", true, (json) =>
         {
             onSuccess?.Invoke(JsonUtility.FromJson<FinishMatchResponse>(json));
         }, onError);
     }
 
-    // ── MAPS UGC ──────────────────────────────────────────────────
-
     public IEnumerator CreateMap(CreateMapRequest payload,
         Action<CreateMapResponse> onSuccess, Action<string> onError)
     {
-        string body = JsonUtility.ToJson(payload);
-        yield return Post("/maps/", body, true, (json) =>
+        yield return Post("/maps/", JsonUtility.ToJson(payload), true, (json) =>
         {
             onSuccess?.Invoke(JsonUtility.FromJson<CreateMapResponse>(json));
         }, onError);
@@ -162,8 +142,7 @@ public class ApiManager : MonoBehaviour
     public IEnumerator AddMapVersion(AddVersionRequest payload,
         Action<AddVersionResponse> onSuccess, Action<string> onError)
     {
-        string body = JsonUtility.ToJson(payload);
-        yield return Post("/maps/version", body, true, (json) =>
+        yield return Post("/maps/version", JsonUtility.ToJson(payload), true, (json) =>
         {
             onSuccess?.Invoke(JsonUtility.FromJson<AddVersionResponse>(json));
         }, onError);
@@ -174,15 +153,13 @@ public class ApiManager : MonoBehaviour
     {
         var payload = new MapTestRequest
         {
-            map_id = mapId,
+            map_id           = mapId,
             duration_seconds = durationSeconds,
-            completion_rate = completionRate
+            completion_rate  = completionRate
         };
-        string body = JsonUtility.ToJson(payload);
-        yield return Post("/maps/test", body, true, (_) => onSuccess?.Invoke(), onError);
+        yield return Post("/maps/test", JsonUtility.ToJson(payload), true, (_) => onSuccess?.Invoke(), onError);
     }
 
-    /// <summary>Récupère une map par son ID (utilisé par le deeplink).</summary>
     public IEnumerator GetMap(int mapId, Action<MapResponse> onSuccess, Action<string> onError)
     {
         yield return Get($"/maps/{mapId}", (json) =>
@@ -191,8 +168,6 @@ public class ApiManager : MonoBehaviour
         }, onError);
     }
 
-    // ── HTTP helpers ──────────────────────────────────────────────
-
     private IEnumerator Get(string path, Action<string> onSuccess, Action<string> onError)
     {
         using var req = UnityWebRequest.Get(baseUrl + path);
@@ -200,10 +175,8 @@ public class ApiManager : MonoBehaviour
         if (!string.IsNullOrEmpty(_token))
             req.SetRequestHeader("Authorization", "Bearer " + _token);
         yield return req.SendWebRequest();
-        if (req.result == UnityWebRequest.Result.Success)
-            onSuccess?.Invoke(req.downloadHandler.text);
-        else
-            onError?.Invoke($"GET {path} -> {req.responseCode}: {req.downloadHandler.text}");
+        if (req.result == UnityWebRequest.Result.Success) onSuccess?.Invoke(req.downloadHandler.text);
+        else onError?.Invoke($"GET {path} -> {req.responseCode}: {req.downloadHandler.text}");
     }
 
     private IEnumerator Post(string path, string jsonBody, bool auth,
@@ -217,14 +190,12 @@ public class ApiManager : MonoBehaviour
         if (auth && !string.IsNullOrEmpty(_token))
             req.SetRequestHeader("Authorization", "Bearer " + _token);
         yield return req.SendWebRequest();
-        if (req.result == UnityWebRequest.Result.Success)
-            onSuccess?.Invoke(req.downloadHandler.text);
-        else
-            onError?.Invoke($"POST {path} -> {req.responseCode}: {req.downloadHandler.text}");
+        if (req.result == UnityWebRequest.Result.Success) onSuccess?.Invoke(req.downloadHandler.text);
+        else onError?.Invoke($"POST {path} -> {req.responseCode}: {req.downloadHandler.text}");
     }
 }
 
-// ── DTOs ──────────────────────────────────────────────────────────
+
 
 [Serializable] public class LoginRequest  { public string email; public string password; }
 [Serializable] public class LoginResponse { public string access_token; public string token_type; }
@@ -245,8 +216,19 @@ public class UserProfile
     public int    hard_currency;
 }
 
+[Serializable] public class PseudoResponse   { public int id; public string pseudo; }
 [Serializable] public class JoinQueueRequest { public string mode; }
-[Serializable] public class QueueResponse    { public string message; public string status; }
+
+
+[Serializable]
+public class QueueResponse
+{
+    public string message;
+    public string status;
+    public int    match_id;  
+    public int    opponent;  
+    public int    map_id;    
+}
 
 [Serializable]
 public class CurrentMatchResponse
@@ -285,7 +267,7 @@ public class CreateMapRequest
     public string[] screenshot_urls;
 }
 
-[Serializable] public class CreateMapResponse  { public string message; public int map_id; }
+[Serializable] public class CreateMapResponse { public string message; public int map_id; }
 
 [Serializable]
 public class AddVersionRequest

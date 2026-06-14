@@ -2,10 +2,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Écran de résultats après un match.
-/// Affiche les gains MMR / XP / coins récupérés depuis l'API.
-/// </summary>
+
+
+
+
 public class ResultsUI : MonoBehaviour
 {
     [Header("Textes résultats")]

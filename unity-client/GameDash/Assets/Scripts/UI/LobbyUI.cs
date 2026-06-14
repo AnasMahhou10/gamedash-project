@@ -1,10 +1,8 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Lobby principal : affiche les infos du joueur et les boutons pour rejoindre une file.
-/// </summary>
 public class LobbyUI : MonoBehaviour
 {
     [Header("Infos joueur")]
@@ -17,14 +15,13 @@ public class LobbyUI : MonoBehaviour
     public Button rankedButton;
     public Button unrankedButton;
     public Button funButton;
-    public Button mapEditorButton;
+    public Button disconnectButton;
 
     [Header("Status")]
     public TMP_Text statusText;
 
     void Start()
     {
-        // Affiche les infos du joueur connecté
         var p = GameManager.Instance.LocalPlayer;
         if (p != null)
         {
@@ -37,7 +34,7 @@ public class LobbyUI : MonoBehaviour
         rankedButton.onClick.AddListener(  () => JoinQueue("ranked"));
         unrankedButton.onClick.AddListener(() => JoinQueue("unranked"));
         funButton.onClick.AddListener(     () => JoinQueue("fun"));
-        mapEditorButton.onClick.AddListener(() => GameManager.Instance.GoToMapEditor());
+        disconnectButton.onClick.AddListener(OnDisconnect);
 
         statusText.text = "";
     }
@@ -49,10 +46,29 @@ public class LobbyUI : MonoBehaviour
         GameManager.Instance.StartMatchmaking(mode);
     }
 
+    private void OnDisconnect()
+    {
+        SetButtonsInteractable(false);
+        statusText.text = "Déconnexion...";
+        StartCoroutine(DoDisconnect());
+    }
+
+    private IEnumerator DoDisconnect()
+    {
+        yield return ApiManager.Instance.LeaveQueue(
+            onSuccess: () => { },
+            onError: (err) => Debug.LogWarning($"LeaveQueue: {err}")
+        );
+        GameWebSocketClient.Instance?.DisconnectLobbyWS();
+        ApiManager.Instance.Logout();
+        GameManager.Instance.GoToLogin();
+    }
+
     private void SetButtonsInteractable(bool v)
     {
-        rankedButton.interactable   = v;
-        unrankedButton.interactable = v;
-        funButton.interactable      = v;
+        rankedButton.interactable    = v;
+        unrankedButton.interactable  = v;
+        funButton.interactable       = v;
+        disconnectButton.interactable = v;
     }
 }

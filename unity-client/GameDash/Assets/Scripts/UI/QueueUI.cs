@@ -3,51 +3,85 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Écran de file d'attente. Tourne en attendant que GameManager trouve un match.
-/// Affiche le temps d'attente et le mode en cours.
-/// </summary>
+
+
+
+
 public class QueueUI : MonoBehaviour
 {
     [Header("UI")]
     public TMP_Text modeText;
     public TMP_Text waitTimeText;
-    public TMP_Text dotsText;
+    public TMP_Text searchingText;
+    public TMP_Text tipText;
     public Button   cancelButton;
 
-    private float   _elapsed = 0f;
-    private bool    _running = true;
+    [Header("Icône de chargement (optionnel)")]
+    public RectTransform spinnerIcon;
+    public float spinSpeed = 120f;
+
+    private float _elapsed = 0f;
+    private bool  _running = true;
+
+    private static readonly string[] _modeTips = new[]
+    {
+        "Conseil : contrôle ton personnage avec les flèches directionnelles.",
+        "Conseil : appuie sur Espace pour tirer.",
+        "Conseil : le joueur avec le plus de vies gagne si le temps expire.",
+        "Conseil : rester mobile rend la cible plus difficile à atteindre.",
+        "Conseil : observe les déplacements de l'adversaire pour anticiper.",
+    };
 
     void Start()
     {
-        modeText.text = $"Mode : {GameManager.Instance.CurrentMode?.ToUpper() ?? "—"}";
-        cancelButton.onClick.AddListener(() =>
+        string modeLabel = GameManager.Instance.CurrentMode?.ToUpper() switch
         {
-            _running = false;
-            GameManager.Instance.CancelMatchmaking();
-        });
+            "RANKED"   => "COMPÉTITIF",
+            "UNRANKED" => "NON-CLASSÉ",
+            "FUN"      => "ARCADE",
+            var m      => m ?? "—"
+        };
+        if (modeText != null) modeText.text = modeLabel;
 
-        StartCoroutine(AnimateDots());
+        
+        if (tipText != null)
+            tipText.text = _modeTips[Random.Range(0, _modeTips.Length)];
+
+        cancelButton?.onClick.AddListener(OnCancel);
+        StartCoroutine(AnimateSearching());
     }
 
     void Update()
     {
         if (!_running) return;
+
         _elapsed += Time.deltaTime;
-        int minutes = (int)(_elapsed / 60);
-        int seconds = (int)(_elapsed % 60);
-        waitTimeText.text = $"En attente : {minutes:00}:{seconds:00}";
+        int m = (int)(_elapsed / 60);
+        int s = (int)(_elapsed % 60);
+        if (waitTimeText  != null) waitTimeText.text = $"{m:00}:{s:00}";
+
+        
+        if (spinnerIcon != null)
+            spinnerIcon.Rotate(0f, 0f, -spinSpeed * Time.deltaTime);
     }
 
-    private IEnumerator AnimateDots()
+    private IEnumerator AnimateSearching()
     {
-        string[] frames = { ".", "..", "..." };
+        string[] frames = { "Recherche d'adversaire", "Recherche d'adversaire.", "Recherche d'adversaire..", "Recherche d'adversaire..." };
         int i = 0;
         while (_running)
         {
-            dotsText.text = "Recherche" + frames[i % 3];
+            if (searchingText != null) searchingText.text = frames[i % frames.Length];
             i++;
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.4f);
         }
+    }
+
+    private void OnCancel()
+    {
+        _running = false;
+        cancelButton.interactable = false;
+        if (searchingText != null) searchingText.text = "Annulation...";
+        GameManager.Instance.CancelMatchmaking();
     }
 }

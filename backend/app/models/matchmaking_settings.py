@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer
+from sqlalchemy import Boolean, Column, Integer, event
+from sqlalchemy.orm import Session
 
 from app.database import Base
 
@@ -13,3 +14,8 @@ class MatchmakingSettings(Base):
     ranked_enabled = Column(Boolean, default=True)
     unranked_enabled = Column(Boolean, default=True)
     fun_enabled = Column(Boolean, default=True)
+
+    # Map par défaut associée à chaque mode (nullable = utilise la sélection automatique)
+    ranked_default_map_id = Column(Integer, nullable=True)
+    unranked_default_map_id = Column(Integer, nullable=True)
+    fun_default_map_id = Column(Integer, nullable=True)
