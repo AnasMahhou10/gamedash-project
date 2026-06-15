@@ -174,3 +174,7 @@ Pour une V3 plus proche d'un vrai produit live ops :
 - support team size > 1
 - historique filtre par mode et periode
 - analytics admin sur temps d'attente moyen et qualite de match
+
+Documentation Matchmaking
+
+- [Partie matchmaking.docs](https://github.com/loziamina/gamedash-project/blob/main/docs/Partie matchmaking.docs)

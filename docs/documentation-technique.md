@@ -300,3 +300,4 @@ npm run dev
 - [plan-securite-conformite.md](https://github.com/loziamina/gamedash-project/blob/main/docs/plan-securite-conformite.md)
 - [guide-utilisateur.md](https://github.com/loziamina/gamedash-project/blob/main/docs/guide-utilisateur.md)
 - [boutique-economie.md](https://github.com/loziamina/gamedash-project/blob/main/docs/boutique-economie.md)
+- [Partie matchmaking.docs](https://github.com/loziamina/gamedash-project/blob/main/docs/Partie matchmaking.docs)
