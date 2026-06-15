@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user, require_admin
 from app.database import get_db
 from app.models.user import User
 from app.routes.auth import serialize_user_profile
 from app.schemas.user import UserProfileUpdate
-from app.core.dependencies import get_current_user, require_admin
 
 router = APIRouter()
 
@@ -24,6 +24,18 @@ def get_users(
     return [serialize_user_profile(user) for user in users]
 
 
+@router.get("/{user_id}/pseudo")
+def get_user_pseudo(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"id": target.id, "pseudo": target.pseudo}
+
+
 @router.put("/{user_id}")
 def update_user(
     user_id: int,
@@ -39,16 +51,15 @@ def update_user(
     if current_user.id != user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    user.pseudo = data.pseudo
-    user.avatar_url = data.avatar_url
-    user.bio = data.bio
-    user.region = data.region
-    user.language = data.language
+    user.pseudo                  = data.pseudo
+    user.avatar_url              = data.avatar_url
+    user.bio                     = data.bio
+    user.region                  = data.region
+    user.language                = data.language
     user.matchmaking_preferences = data.matchmaking_preferences
 
     db.commit()
     db.refresh(user)
-
     return serialize_user_profile(user)
 
 
@@ -68,5 +79,4 @@ def delete_user(
 
     db.delete(user)
     db.commit()
-
     return {"message": "User deleted"}

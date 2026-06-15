@@ -98,7 +98,8 @@ Ensuite :
 1. selectionner un mode
 2. cliquer sur rejoindre la file
 3. attendre l'appariement
-4. etre redirige vers la session de jeu
+4. etre redirige vers la session de jeu web
+5. ouvrir Unity avec le bouton `Ouvrir Unity` ou `Relancer Unity`
 
 Le systeme affiche aussi :
 
@@ -111,6 +112,7 @@ Le systeme affiche aussi :
 Dans la page `Game` :
 
 - le match est affiche avec l'adversaire
+- la scene Unity `Game` peut etre lancee via `Ouvrir Unity`
 - le joueur peut simuler une victoire ou une defaite
 - a la fin, le systeme met a jour :
   - le MMR
@@ -149,11 +151,10 @@ Depuis `Maps`, un joueur peut :
 - publier une map
 - ajouter des captures d'ecran
 - importer un contenu map
-- ajouter des versions
 - voter
 - mettre en favori
 - commenter
-- lancer un test
+- lancer un test dans Unity
 - signaler une map
 
 Chaque map affiche :
@@ -164,8 +165,14 @@ Chaque map affiche :
 - tests
 - note moyenne
 - retention
-- versions
 - stats createur
+
+Le bouton `Test` ouvre Unity sur la scene `MapTest`. La map publiee est recuperee depuis l'API, decodee, puis reconstruite dans Unity pour etre testee.
+
+Le matchmaking et les maps communautaires sont separes :
+
+- matchmaking : ouvre la scene Unity `Game` par defaut
+- test de map : ouvre la scene Unity `MapTest` avec la map selectionnee
 
 Le hub communautaire sert aussi a :
 
@@ -229,12 +236,14 @@ Pour une demonstration complete :
 1. se connecter
 2. montrer le dashboard
 3. lancer un match
-4. terminer le match
-5. ouvrir l'historique
-6. montrer la courbe ELO
-7. creer une map
-8. tester / commenter / voter la map
-9. ouvrir l'admin panel
+4. ouvrir la scene Unity `Game`
+5. terminer le match
+6. ouvrir l'historique
+7. montrer la courbe ELO
+8. creer une map
+9. tester la map dans Unity via `MapTest`
+10. commenter / voter la map
+11. ouvrir l'admin panel
 
 ## 14. Documentation detaillee boutique
 

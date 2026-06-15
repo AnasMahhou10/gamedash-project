@@ -58,11 +58,11 @@ export const createMatch = async (mode) => {
 export const getMatchmakingSettings = async () => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API}/matchmaking/settings`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const headers = token
+    ? { Authorization: `Bearer ${token}` }
+    : undefined;
+
+  const res = await fetch(`${API}/matchmaking/settings`, { headers });
 
   if (!res.ok) {
     throw new Error("Unable to fetch matchmaking settings");
@@ -74,11 +74,11 @@ export const getMatchmakingSettings = async () => {
 export const getMatchmakingOverview = async () => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API}/matchmaking/queue-overview`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const headers = token
+    ? { Authorization: `Bearer ${token}` }
+    : undefined;
+
+  const res = await fetch(`${API}/matchmaking/queue-overview`, { headers });
 
   if (!res.ok) {
     throw new Error("Unable to fetch matchmaking overview");
@@ -90,11 +90,11 @@ export const getMatchmakingOverview = async () => {
 export const getCurrentMatch = async () => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API}/matchmaking/current`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const headers = token
+    ? { Authorization: `Bearer ${token}` }
+    : undefined;
+
+  const res = await fetch(`${API}/matchmaking/current`, { headers });
 
   if (!res.ok) {
     throw new Error("Unable to fetch current match");

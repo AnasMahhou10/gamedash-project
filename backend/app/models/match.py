@@ -8,6 +8,7 @@ class Match(Base):
     id = Column(Integer, primary_key=True, index=True)
     player1_id = Column(Integer, ForeignKey("users.id"))
     player2_id = Column(Integer, ForeignKey("users.id"))
+    map_id = Column(Integer, ForeignKey("maps.id"), nullable=True)
     mode = Column(String, default="ranked")
 
     status = Column(String, default="pending")  # pending / ongoing / finished

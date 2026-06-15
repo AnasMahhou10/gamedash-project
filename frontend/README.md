@@ -71,7 +71,7 @@ Pages principales de l'application.
 - `Profile.jsx` : edition complete du profil joueur
 - `Dashboard.jsx` : vue principale joueur avec statistiques, niveau, quetes et leaderboard
 - `Matchmaking.jsx` : choix du mode de jeu, etat joueur, monitoring files
-- `Game.jsx` : ecran de session de match et fin de partie
+- `Game.jsx` : ecran de session de match, ouverture Unity et fin de partie
 - `History.jsx` : historique des matchs avec filtres et details
 - `EloGraph.jsx` : progression MMR / ELO par mode
 - `Maps.jsx` : hub communautaire des maps et creator studio
@@ -87,7 +87,7 @@ Couche d'acces API.
 - `match.js` : historique des matchs
 - `elo.js` : historique ELO / MMR
 - `dashboard.js` : leaderboard, summary, winrate, quests
-- `maps.js` : maps, versions, votes, favoris, tests, signalements
+- `maps.js` : maps, votes, favoris, tests Unity, signalements
 - `admin.js` : backoffice, moderation, sanctions, reward settings, rank settings
 
 ## Fichiers racine importants
@@ -116,11 +116,20 @@ ou
 
 ### Matchmaking
 
-`Dashboard` -> `Matchmaking` -> `Game` -> `History` / `Dashboard`
+`Dashboard` -> `Matchmaking` -> `Game` -> `Unity Game` -> `History` / `Dashboard`
 
 ### UGC maps
 
-`Dashboard` -> `Maps`
+`Dashboard` -> `Maps` -> `Test` -> `Unity MapTest`
+
+## Integration Unity
+
+Le frontend ouvre Unity avec le protocole Windows `gamedash://` :
+
+- `gamedash://match` depuis la page `Game`, pour lancer la scene Unity `Game`
+- `gamedash://testmap` depuis `Maps`, pour tester une map publiee dans la scene Unity `MapTest`
+
+Le protocole doit etre enregistre localement avec `unity-setup/register_deeplink.bat` apres avoir genere le build Unity `GameDash.exe`.
 
 ### Backoffice
 

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.config import SECRET_KEY
 from app.core.ws_manager import manager
 from app.database import SessionLocal
+from app.models.queue import QueuePlayer
 from app.models.rank_settings import RankSettings
 from app.models.user import User
 from app.utils.rank import get_rank_payload
@@ -46,12 +47,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
     await manager.connect(user.id, websocket)
 
-    #  ENVOI INITIAL DASHBOARD
-    total_users = len(manager.active_connections)
-    await websocket.send_json({
-        "type": "stats",
-        "players": total_users
-    })
+    # ENVOI STATS A TOUS LES DASHBOARDS CONNECTES
+    await manager.broadcast_stats()
 
     await websocket.send_json({
         "type": "elo",
@@ -70,3 +67,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         manager.disconnect(user.id)
+        await manager.broadcast_stats()
+        db = SessionLocal()
+        try:
+            disconnected_user = db.query(User).filter(User.id == user.id).first()
+            if disconnected_user and disconnected_user.player_status == "queue":
+                db.query(QueuePlayer).filter(
+                    QueuePlayer.user_id == user.id,
+                    QueuePlayer.status == "waiting",
+                ).delete(synchronize_session=False)
+                disconnected_user.player_status = "online"
+                db.commit()
+        finally:
+            db.close()

@@ -1,4 +1,6 @@
 import json
+import base64
+from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, get_optional_current_user
 from app.database import get_db
 from app.models.map import Map
+from app.utils.progression import apply_progression
 from app.models.map_comment import MapComment
 from app.models.map_favorite import MapFavorite
 from app.models.map_playtest import MapPlaytest
@@ -17,8 +20,45 @@ from app.models.map_version import MapVersion
 from app.models.map_vote import MapVote
 from app.models.notification import Notification
 from app.models.user import User
+from app.models.virtual_transaction import VirtualTransaction
+from fastapi import Body
+
 
 router = APIRouter(prefix="/maps")
+
+
+
+
+@router.post("/unity/save/{map_id}")
+def save_map_unity(map_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
+    game_map = db.query(Map).filter(Map.id == map_id).first()
+
+    if not game_map:
+        raise HTTPException(status_code=404, detail="Map not found")
+
+    # stocker JSON Unity
+    game_map.content_url = json.dumps(data)
+    game_map.last_updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"message": "Map JSON saved"}
+
+
+@router.get("/unity/load/{map_id}")
+def load_map_unity(map_id: int, db: Session = Depends(get_db)):
+    game_map = db.query(Map).filter(Map.id == map_id).first()
+
+    if not game_map:
+        raise HTTPException(status_code=404, detail="Map not found")
+
+    if not game_map.content_url:
+        return {"objects": []}
+
+    try:
+        return json.loads(game_map.content_url)
+    except:
+        return {"objects": []}
 
 
 class CreateMapPayload(BaseModel):
@@ -35,6 +75,15 @@ class AddVersionPayload(BaseModel):
     notes: str
     content_url: str | None = None
     screenshot_urls: list[str] = Field(default_factory=list)
+
+
+class UpdateMapPayload(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+    tags: list[str] | None = None
+    content_url: str | None = None
+    screenshot_urls: list[str] | None = None
 
 
 class VoteMapPayload(BaseModel):
@@ -208,8 +257,42 @@ def _serialize_map(game_map: Map, db: Session, current_user: User | None):
     }
 
 
+def _validate_map_content(raw_content: Optional[str]):
+    if not raw_content:
+        return True
+    # try to handle data URLs: data:application/json;base64,xxxx
+    try:
+        content = raw_content
+        if content.startswith("data:") and "," in content:
+            content = content.split(",", 1)[1]
+
+        # try base64 decode
+        try:
+            decoded = base64.b64decode(content)
+            text = decoded.decode("utf-8")
+            obj = json.loads(text)
+        except Exception:
+            # maybe it's plain JSON
+            obj = json.loads(content)
+
+        # basic shape checks
+        if not isinstance(obj, dict):
+            return False
+        if not all(k in obj for k in ("width", "height", "cells")):
+            return False
+        if not isinstance(obj["cells"], list):
+            return False
+        return True
+    except Exception:
+        return False
+
+
 @router.post("/")
 def create_map(payload: CreateMapPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # validate content_url
+    if payload.content_url and not _validate_map_content(payload.content_url):
+        raise HTTPException(status_code=400, detail="Invalid map content_url")
+
     game_map = Map(
         title=payload.title,
         description=payload.description,
@@ -245,6 +328,8 @@ def add_version(payload: AddVersionPayload, user: User = Depends(get_current_use
     version = f"v{count + 1}"
     db.add(MapVersion(map_id=payload.map_id, version=version, notes=payload.notes))
     if payload.content_url:
+        if not _validate_map_content(payload.content_url):
+            raise HTTPException(status_code=400, detail="Invalid map content_url")
         game_map.content_url = payload.content_url
     if payload.screenshot_urls:
         game_map.screenshot_urls = json.dumps(payload.screenshot_urls[:4])
@@ -360,6 +445,37 @@ def mark_test(payload: MapTestPayload, user: User = Depends(get_current_user), d
         "Nouveau test",
         f"{user.pseudo} a teste votre map {game_map.title}.",
     )
+    # Rewards: small bonus to the tester and a tiny reward to the map author
+    try:
+        tester_xp = 10
+        tester_currency = 5
+        author_currency = 3
+
+        # apply progression to tester
+        tester_progress = apply_progression(user, xp_gain=tester_xp, currency_gain=tester_currency)
+        db.add(
+            VirtualTransaction(
+                user_id=user.id,
+                amount=tester_currency,
+                currency_type="soft",
+                source="map_test_reward",
+            )
+        )
+
+        # reward the author (if not the tester)
+        if game_map.author_id and game_map.author_id != user.id:
+            db.add(
+                VirtualTransaction(
+                    user_id=game_map.author_id,
+                    amount=author_currency,
+                    currency_type="soft",
+                    source="map_test_received",
+                )
+            )
+    except Exception:
+        # don't block test recording on reward errors
+        pass
+
     db.commit()
     return {"message": "Map test recorded"}
 
@@ -389,7 +505,7 @@ def report_map(payload: MapReportPayload, user: User = Depends(get_current_user)
 def get_my_maps(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     my_maps = (
         db.query(Map)
-        .filter(Map.author_id == user.id)
+        .filter(Map.author_id == user.id, Map.hidden.is_(False))
         .order_by(Map.last_updated_at.desc(), Map.created_at.desc())
         .all()
     )
@@ -463,6 +579,68 @@ def creator_stats(db: Session = Depends(get_db)):
         for pseudo, stats in sorted(creators.items(), key=lambda item: (item[1]["popularity"], item[1]["tests_count"]), reverse=True)
     ]
     return payload[:10]
+@router.get("/{map_id}")
+def get_map_by_id(
+    map_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_current_user),
+):
+   
+    game_map = db.query(Map).filter(Map.id == map_id, Map.hidden.is_(False)).first()
+
+    if not game_map:
+        raise HTTPException(status_code=404, detail="Map not found")
+
+    return _serialize_map(game_map, db, current_user)
+
+
+@router.put("/{map_id}")
+def update_map(map_id: int, payload: UpdateMapPayload, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    game_map = db.query(Map).filter(Map.id == map_id).first()
+    if not game_map:
+        raise HTTPException(status_code=404, detail="Map not found")
+    if game_map.author_id != user.id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed to edit this map")
+
+    if payload.content_url is not None:
+        if not _validate_map_content(payload.content_url):
+            raise HTTPException(status_code=400, detail="Invalid map content_url")
+        game_map.content_url = payload.content_url
+
+    if payload.title is not None:
+        game_map.title = payload.title
+    if payload.description is not None:
+        game_map.description = payload.description
+    if payload.status is not None:
+        game_map.status = payload.status
+    if payload.screenshot_urls is not None:
+        game_map.screenshot_urls = json.dumps(payload.screenshot_urls[:4])
+    if payload.tags is not None:
+        # replace tags: remove existing and add provided
+        db.query(MapTag).filter(MapTag.map_id == game_map.id).delete()
+        for tag_name in payload.tags[:5]:
+            cleaned = tag_name.strip().lower()
+            if cleaned:
+                db.add(MapTag(map_id=game_map.id, name=cleaned))
+
+    game_map.last_updated_at = datetime.utcnow()
+    db.commit()
+    return {"message": "Map updated", "map_id": game_map.id}
+
+
+@router.delete("/{map_id}")
+def delete_map(map_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    game_map = db.query(Map).filter(Map.id == map_id).first()
+    if not game_map:
+        raise HTTPException(status_code=404, detail="Map not found")
+    if game_map.author_id != user.id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed to delete this map")
+
+    # soft delete
+    game_map.hidden = True
+    game_map.last_updated_at = datetime.utcnow()
+    db.commit()
+    return {"message": "Map deleted"}
 
 
 @router.get("/")
@@ -511,3 +689,6 @@ def get_maps(
         items.sort(key=lambda item: item["popularity"], reverse=True)
 
     return items
+
+
+

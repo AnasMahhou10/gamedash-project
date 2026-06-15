@@ -1,8 +1,9 @@
 const API = "http://127.0.0.1:8000";
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
+const authHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export const getDashboardSummary = async () => {
   const res = await fetch(`${API}/dashboard/me/summary`, {

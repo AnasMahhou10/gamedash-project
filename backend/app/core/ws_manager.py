@@ -15,5 +15,25 @@ class ConnectionManager:
         if ws:
             await ws.send_json(data)
 
+    async def broadcast(self, data):
+        stale_users = []
+
+        for user_id, ws in self.active_connections.items():
+            try:
+                await ws.send_json(data)
+            except Exception:
+                stale_users.append(user_id)
+
+        for user_id in stale_users:
+            self.disconnect(user_id)
+
+    async def broadcast_stats(self):
+        await self.broadcast(
+            {
+                "type": "stats",
+                "players": len(self.active_connections),
+            }
+        )
+
 
 manager = ConnectionManager()

@@ -136,6 +136,7 @@ Logique metier reutilisable.
 
 - files `ranked`, `unranked`, `fun`
 - etats joueur
+- creation de match pour la scene Unity `Game`
 - historique, MMR, rank, divisions
 - leaderboard
 - winrate
@@ -154,14 +155,24 @@ Logique metier reutilisable.
 ### UGC Maps
 
 - publication
-- versions
 - votes
 - favoris
 - commentaires
-- tests
+- tests dans Unity via la scene `MapTest`
 - signalements
 - stats createurs
 - moderation admin
+
+### Integration Unity
+
+Le backend fournit les donnees consommees par Unity :
+
+- `/matchmaking/current` retourne le match courant pour la scene `Game`
+- `/matchmaking/finish` cloture le match et applique progression / recompenses
+- `/maps/{map_id}` retourne le contenu d'une map publiee pour la scene `MapTest`
+- `/maps/test` enregistre les resultats d'un test de map
+
+Le lancement de Unity est declenche cote frontend via `gamedash://match` ou `gamedash://testmap`.
 
 ## Documentation complementaire
 Document disponible :

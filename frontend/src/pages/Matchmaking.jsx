@@ -31,6 +31,8 @@ const MODES = [
   },
 ];
 
+const SEARCH_SESSION_KEY = "gamedash_matchmaking_started";
+
 export default function Matchmaking() {
   const [status, setStatus] = useState("Idle");
   const [match, setMatch] = useState(null);
@@ -39,6 +41,22 @@ export default function Matchmaking() {
   const [selectedMode, setSelectedMode] = useState("ranked");
   const [settings, setSettings] = useState(null);
   const [overview, setOverview] = useState(null);
+  const [queuedMode, setQueuedMode] = useState(null);
+  const [searchingStarted, setSearchingStarted] = useState(
+    sessionStorage.getItem(SEARCH_SESSION_KEY) === "true"
+  );
+
+  const findQueuedMode = (overviewData, userId) => {
+    if (!overviewData || !userId) {
+      return null;
+    }
+
+    return (
+      MODES.find((mode) =>
+        (overviewData.queue?.[mode.value] || []).some((entry) => entry.user_id === userId)
+      )?.value || null
+    );
+  };
 
   const redirectToGame = (matchPayload) => {
     setMatch(matchPayload);
@@ -47,41 +65,74 @@ export default function Matchmaking() {
   };
 
   const refreshData = async () => {
+    // load user if available, but don't fail the whole flow if not logged
+    let me = null;
+    let activeQueueMode = null;
     try {
-      const [me, settingsData, overviewData, currentMatchData] = await Promise.all([
-        getMe(),
+      me = await getMe();
+      setCurrentUser(me);
+    } catch {
+      // not authenticated or user fetch failed
+      setCurrentUser(null);
+    }
+
+    // load settings and overview (public)
+    try {
+      const [settingsData, overviewData] = await Promise.all([
         getMatchmakingSettings(),
         getMatchmakingOverview(),
-        getCurrentMatch(),
       ]);
-      setCurrentUser(me);
       setSettings(settingsData.settings);
       setOverview(overviewData);
 
-      if (currentMatchData?.match) {
-        setStatus("Match en cours");
-        redirectToGame(currentMatchData.match);
-        return;
+      activeQueueMode = findQueuedMode(overviewData, me?.id);
+
+      if (activeQueueMode && sessionStorage.getItem(SEARCH_SESSION_KEY) !== "true") {
+        await leaveQueue();
+        activeQueueMode = null;
       }
 
-      setStatus(
-        me.player_status === "queue"
+      setQueuedMode(activeQueueMode);
+      if (activeQueueMode) {
+        setSelectedMode(activeQueueMode);
+      }
+    } catch (err) {
+      console.error("Failed to load matchmaking settings/overview", err);
+      toast.error("Impossible de charger les paramètres du matchmaking.");
+      return;
+    }
+
+    // if user is logged, check current match
+    if (me) {
+      try {
+        const currentMatchData = await getCurrentMatch();
+        if (currentMatchData?.match) {
+          setStatus("Match en cours");
+          redirectToGame(currentMatchData.match);
+          return;
+        }
+      } catch (err) {
+        console.warn("Unable to fetch current match", err);
+      }
+    }
+
+    setStatus(
+      me
+        ? me.player_status === "queue" || activeQueueMode
           ? "En file d'attente"
           : me.player_status === "in_game"
             ? "Match en cours"
             : "Pret a lancer une recherche"
-      );
-    } catch (error) {
-      console.error(error);
-      toast.error("Impossible de charger le matchmaking.");
-    }
+        : "Pret a lancer une recherche"
+    );
   };
 
   useEffect(() => {
     refreshData();
 
     const token = localStorage.getItem("token");
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/matchmaking?token=${token}`);
+    const wsUrl = token ? `ws://127.0.0.1:8000/ws/matchmaking?token=${token}` : `ws://127.0.0.1:8000/ws/matchmaking`;
+    const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -100,24 +151,26 @@ export default function Matchmaking() {
   }, []);
 
   useEffect(() => {
-    if (currentUser?.player_status !== "queue") {
+    if (!searchingStarted || (currentUser?.player_status !== "queue" && !queuedMode)) {
       return undefined;
     }
 
     const interval = setInterval(async () => {
       try {
-        const res = await createMatch(selectedMode);
+        const modeToMatch = queuedMode || selectedMode;
+        const res = await createMatch(modeToMatch);
 
         if (res?.match_id) {
           const matchPayload = {
             match_id: res.match_id,
             opponent:
               currentUser?.id === res.players?.[0] ? res.players?.[1] : res.players?.[0],
-            mode: res.mode || selectedMode,
+            mode: res.mode || modeToMatch,
+            map_id: res.map_id,
             status: "in_game",
           };
 
-          toast.success(`Match trouve en mode ${res.mode || selectedMode} !`);
+          toast.success(`Match trouve en mode ${res.mode || modeToMatch} !`);
           redirectToGame(matchPayload);
         } else {
           await refreshData();
@@ -128,7 +181,7 @@ export default function Matchmaking() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [currentUser?.player_status, currentUser?.id, selectedMode]);
+  }, [currentUser?.player_status, currentUser?.id, queuedMode, selectedMode, searchingStarted]);
 
   const handleJoin = async () => {
     try {
@@ -141,6 +194,7 @@ export default function Matchmaking() {
           opponent:
             currentUser?.id === res.players?.[0] ? res.players?.[1] : res.players?.[0],
           mode: res.mode || selectedMode,
+          map_id: res.map_id,
           status: "in_game",
         };
 
@@ -153,6 +207,9 @@ export default function Matchmaking() {
       setCurrentUser((prev) =>
         prev ? { ...prev, player_status: res.player_status || "queue" } : prev
       );
+      setQueuedMode(res.mode || selectedMode);
+      sessionStorage.setItem(SEARCH_SESSION_KEY, "true");
+      setSearchingStarted(true);
       toast.success(res.message || "Recherche lancee");
       await refreshData();
     } catch (error) {
@@ -170,6 +227,9 @@ export default function Matchmaking() {
       setCurrentUser((prev) =>
         prev ? { ...prev, player_status: res.player_status || "online" } : prev
       );
+      setQueuedMode(null);
+      sessionStorage.removeItem(SEARCH_SESSION_KEY);
+      setSearchingStarted(false);
       toast.success(res.message || "File quittee");
       await refreshData();
     } catch (error) {
@@ -187,11 +247,11 @@ export default function Matchmaking() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen p-6 text-white">
-        <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-4xl text-cyan-400 drop-shadow-[0_0_20px_rgba(0,212,255,0.7)]">
-              Matchmaking
+            <h1 className="text-3xl text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
+              GameDash Matchmaking
             </h1>
             <p className="mt-2 max-w-3xl text-slate-400">
               Choisis une file, surveille l'etat des joueurs et lance une recherche
@@ -203,17 +263,17 @@ export default function Matchmaking() {
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="dashboard-card rounded-3xl p-6">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="dashboard-card rounded-2xl p-5 sm:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">
+                <p className="tiny-label">
                   Modes
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-white">
                   Plusieurs files de jeu
                 </h2>
               </div>
-              <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200">
+              <div className="w-fit rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200">
                 Etat joueur: {currentUser?.player_status || "online"}
               </div>
             </div>
@@ -232,7 +292,7 @@ export default function Matchmaking() {
                     key={mode.value}
                     type="button"
                     onClick={() => setSelectedMode(mode.value)}
-                    className={`rounded-3xl border p-5 text-left transition-all duration-200 ${
+                    className={`rounded-2xl border p-5 text-left transition-all duration-200 hover:-translate-y-0.5 ${
                       selectedMode === mode.value
                         ? "border-cyan-400 bg-cyan-500/10 shadow-xl shadow-cyan-500/20"
                         : "border-white/10 bg-white/5 hover:border-cyan-400/30"
@@ -260,40 +320,40 @@ export default function Matchmaking() {
               <button
                 onClick={handleJoin}
                 disabled={loading || !selectedModeEnabled}
-                className="rounded-xl bg-cyan-500 px-6 py-3 transition-all duration-200 hover:scale-110 hover:shadow-2xl hover:shadow-cyan-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="nav-button nav-button-cyan disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Recherche..." : `Rejoindre ${selectedMode}`}
               </button>
 
               <button
                 onClick={handleLeave}
-                className="rounded-xl bg-red-500 px-6 py-3 transition-all duration-200 hover:scale-110 hover:shadow-2xl hover:shadow-red-500/20 active:scale-95"
+                className="nav-button nav-button-red"
               >
                 Quitter la file
               </button>
             </div>
           </div>
 
-          <div className="dashboard-card rounded-3xl p-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-pink-300/70">Configuration live</p>
+          <div className="dashboard-card rounded-2xl p-5 sm:p-6">
+            <p className="tiny-label text-pink-300/70">Configuration live</p>
             <h2 className="mt-2 text-2xl font-bold text-white">Parametres actifs</h2>
 
             <div className="mt-5 grid grid-cols-1 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="soft-panel p-4">
                 <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Statut</p>
                 <p className="mt-2 text-xl text-white">{status}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="soft-panel p-4">
                 <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Ecart ELO max</p>
                 <p className="mt-2 text-xl text-cyan-300">{settings?.max_elo_gap ?? "-"}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="soft-panel p-4">
                 <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Attente max</p>
                 <p className="mt-2 text-xl text-yellow-300">
                   {settings?.max_wait_seconds ?? "-"} sec
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="soft-panel p-4">
                 <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Taille equipe</p>
                 <p className="mt-2 text-xl text-pink-300">{settings?.team_size ?? "-"}</p>
               </div>
@@ -309,10 +369,10 @@ export default function Matchmaking() {
           </div>
         </div>
 
-        <div className="dashboard-card rounded-3xl p-6">
-          <div className="mb-5 flex items-center justify-between">
+        <div className="dashboard-card rounded-2xl p-5 sm:p-6">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">Monitoring</p>
+              <p className="tiny-label">Monitoring</p>
               <h2 className="mt-2 text-2xl font-bold text-white">Vue des files en temps reel</h2>
             </div>
             <div className="flex flex-wrap gap-3 text-sm">
@@ -330,7 +390,7 @@ export default function Matchmaking() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {MODES.map((mode) => (
-              <div key={mode.value} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div key={mode.value} className="soft-panel p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-xl font-bold text-white">{mode.label}</h3>
                   <span className="text-sm text-slate-400">

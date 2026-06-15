@@ -3,23 +3,68 @@
 :root {
   color-scheme: dark;
   font-family: Inter, system-ui, sans-serif;
-  background:
-    radial-gradient(circle at top, rgba(14, 165, 233, 0.18), transparent 35%),
-    radial-gradient(circle at bottom, rgba(236, 72, 153, 0.18), transparent 30%),
-    #020617;
+  background: #020617;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at center, rgba(10, 15, 26, 0.95), rgba(0, 0, 0, 1)),
-    linear-gradient(180deg, rgba(14, 165, 233, 0.08), transparent 30%);
+    linear-gradient(135deg, rgba(8, 47, 73, 0.34), transparent 34%),
+    linear-gradient(220deg, rgba(112, 26, 117, 0.22), transparent 38%),
+    linear-gradient(180deg, #020617 0%, #030712 52%, #020617 100%);
   color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
   min-height: 100vh;
+}
+
+::selection {
+  background: rgb(34 211 238 / 0.35);
+  color: #fff;
+}
+
+* {
+  scrollbar-color: rgb(34 211 238 / 0.45) rgb(15 23 42 / 0.45);
+}
+
+::-webkit-scrollbar {
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(15 23 42 / 0.45);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(34 211 238 / 0.35);
+  border: 3px solid rgb(15 23 42 / 0.45);
+  border-radius: 999px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgb(34 211 238 / 0.85);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  transform: none !important;
 }
 
 .grid-bg {
@@ -153,7 +198,123 @@ body {
 }
 
 .dashboard-card {
-  backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  backdrop-filter: blur(22px);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.035)),
+    rgb(2 6 23 / 0.72);
+  border: 1px solid rgb(148 163 184 / 0.18);
+  box-shadow:
+    0 18px 48px rgb(0 0 0 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.dashboard-card:hover {
+  border-color: rgb(34 211 238 / 0.28);
+}
+
+.nav-button {
+  align-items: center;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 0.875rem;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.875rem;
+  padding: 0.75rem 1.1rem;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.nav-button:hover {
+  transform: translateY(-1px);
+}
+
+.nav-button:active {
+  transform: translateY(0);
+}
+
+.nav-button-cyan {
+  background: rgb(6 182 212 / 0.92);
+  color: #082f49;
+}
+
+.nav-button-cyan:hover {
+  box-shadow: 0 16px 32px rgb(6 182 212 / 0.18);
+}
+
+.nav-button-purple {
+  background: rgb(147 51 234 / 0.9);
+  color: #fff;
+}
+
+.nav-button-purple:hover {
+  box-shadow: 0 16px 32px rgb(147 51 234 / 0.18);
+}
+
+.nav-button-pink {
+  background: rgb(219 39 119 / 0.9);
+  color: #fff;
+}
+
+.nav-button-pink:hover {
+  box-shadow: 0 16px 32px rgb(219 39 119 / 0.18);
+}
+
+.nav-button-amber {
+  background: rgb(251 191 36 / 0.94);
+  color: #0f172a;
+}
+
+.nav-button-amber:hover {
+  box-shadow: 0 16px 32px rgb(251 191 36 / 0.18);
+}
+
+.nav-button-red {
+  background: rgb(239 68 68 / 0.9);
+  color: #fff;
+}
+
+.nav-button-red:hover {
+  box-shadow: 0 16px 32px rgb(239 68 68 / 0.18);
+}
+
+.soft-panel {
+  background: rgb(15 23 42 / 0.54);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 1rem;
+}
+
+.form-control {
+  background: rgb(2 6 23 / 0.72);
+  border: 1px solid rgb(148 163 184 / 0.2);
+  border-radius: 1rem;
+  color: #fff;
+  min-height: 2.875rem;
+  padding: 0.75rem 1rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.form-control::placeholder {
+  color: rgb(148 163 184 / 0.78);
+}
+
+.form-control:focus {
+  background: rgb(15 23 42 / 0.88);
+  border-color: rgb(34 211 238 / 0.55);
+  box-shadow: 0 0 0 4px rgb(34 211 238 / 0.1);
+  outline: none;
+}
+
+.tiny-label {
+  color: rgb(125 211 252 / 0.78);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }

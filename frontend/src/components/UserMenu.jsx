@@ -33,7 +33,7 @@ export default function UserMenu({ user }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen((value) => !value)}
-        className="flex items-center gap-3 rounded-full border border-cyan-400/30 bg-slate-950/70 px-3 py-2 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/20"
+        className="flex items-center gap-3 rounded-2xl border border-cyan-400/20 bg-slate-950/70 px-3 py-2 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-slate-900/80"
       >
         {user?.avatar_url ? (
           <img
@@ -42,7 +42,7 @@ export default function UserMenu({ user }) {
             className="h-11 w-11 rounded-full object-cover ring-2 ring-cyan-400/30"
           />
         ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 via-sky-500 to-pink-500 font-black text-slate-950">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 via-sky-400 to-pink-400 font-black text-slate-950 shadow-lg shadow-cyan-500/10">
             {initials}
           </div>
         )}
@@ -62,7 +62,7 @@ export default function UserMenu({ user }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-3 w-64 rounded-2xl border border-cyan-500/20 bg-slate-950/95 p-2 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+        <div className="absolute right-0 z-50 mt-3 w-64 rounded-2xl border border-cyan-500/20 bg-slate-950/95 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl">
           <button
             onClick={() => {
               window.location.href = "/profile";

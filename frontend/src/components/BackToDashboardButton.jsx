@@ -4,7 +4,7 @@ export default function BackToDashboardButton({ className = "" }) {
       onClick={() => {
         window.location.href = "/dashboard";
       }}
-      className={`rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 font-semibold text-cyan-200 transition-all duration-200 hover:scale-[1.02] hover:border-cyan-300/40 hover:bg-cyan-500/20 hover:shadow-xl hover:shadow-cyan-500/20 active:scale-95 ${className}`.trim()}
+      className={`rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/50 hover:bg-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/10 active:translate-y-0 ${className}`.trim()}
     >
       Retour Dashboard
     </button>

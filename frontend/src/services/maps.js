@@ -189,6 +189,36 @@ export const testMap = async (id, duration_seconds = 300, completion_rate = 1) =
   return res.json();
 };
 
+export const deleteMap = async (mapId) => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API}/maps/${mapId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to delete map");
+  }
+  return res.json();
+};
+
+export const updateMap = async (mapId, { title, description, status, tags, content_url, screenshot_urls }) => {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API}/maps/${mapId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ title, description, status, tags, content_url, screenshot_urls }),
+  });
+  if (!res.ok) {
+    throw new Error("Unable to update map");
+  }
+  return res.json();
+};
+
 export const reportMap = async (id, reason) => {
   const token = localStorage.getItem("token");
 

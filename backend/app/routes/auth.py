@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
@@ -24,7 +24,7 @@ from app.utils.rank import get_rank, get_rank_payload
 
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 def serialize_user_profile(user: User):
@@ -113,6 +113,24 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
 
     if not db_user or not db_user.password or not verify_password(user.password, db_user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not db_user.is_active:
+        raise HTTPException(status_code=403, detail="Account is disabled")
+
+    token = create_access_token({"sub": db_user.email})
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+    }
+
+
+@router.post("/token")
+def token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == form_data.username).first()
+
+    if not db_user or not db_user.password or not verify_password(form_data.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not db_user.is_active:
