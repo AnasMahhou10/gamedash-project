@@ -27,18 +27,22 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
-# ── Maps par défaut par mode ───────────────────────────────────────────────────
-# Format : liste de cellules {x, y, type}
-# type 1=mur, 2=sol, 3=spawnP1, 4=spawnP2, 5=powerup
-
 def _build_map_cells(layout: list) -> str:
-    """Encode une liste de cellules en base64 JSON comme le fait Unity."""
     data = {"cells": layout, "width": 16, "height": 12, "title": "", "description": ""}
     return base64.b64encode(json.dumps(data).encode()).decode()
 
 
 def _make_ranked_map():
-    """Map Ranked : arène symétrique avec obstacles centraux."""
+    """
+    Map Ranked : arène symétrique.
+    Les zones or (7,5) et (8,6) sont accessibles par des passages
+    de 2 cases minimum de chaque côté (haut, bas, gauche, droite).
+    
+    Disposition des murs intérieurs :
+    - Colonnes verticales x=5 et x=10, de y=3 à y=8
+    - Pas de barre horizontale fermée — passages libres en haut (y=3)
+      et en bas (y=8) entre x=6 et x=9
+    """
     cells = []
     # Murs extérieurs
     for x in range(16):
@@ -49,20 +53,23 @@ def _make_ranked_map():
     for y in range(1, 11):
         for x in range(1, 15):
             cells.append({"x": x, "y": y, "type": 2})
-    # Obstacles centraux symétriques
-    for y in range(4, 8):
-        cells += [{"x": 5, "y": y, "type": 1}, {"x": 10, "y": y, "type": 1}]
-    for x in range(6, 10):
-        cells += [{"x": x, "y": 3, "type": 1}, {"x": x, "y": 8, "type": 1}]
+    # Colonnes verticales gauche et droite (passages de 2 cases entre elles)
+    for y in range(3, 9):
+        cells.append({"x": 5, "y": y, "type": 1})
+        cells.append({"x": 10, "y": y, "type": 1})
     # Spawns
     cells += [{"x": 2, "y": 2, "type": 3}, {"x": 13, "y": 9, "type": 4}]
-    # Powerups
+    # Zones or au centre — accessibles par passages de 4 cases (x=6 à x=9)
     cells += [{"x": 7, "y": 5, "type": 5}, {"x": 8, "y": 6, "type": 5}]
     return cells
 
 
 def _make_unranked_map():
-    """Map Unranked : couloirs en labyrinthe."""
+    """
+    Map Unranked : labyrinthe avec couloirs en L.
+    Les zones or sont placées dans des espaces ouverts,
+    accessibles par des passages droits d'au moins 2 cases.
+    """
     cells = []
     for x in range(16):
         cells += [{"x": x, "y": 0, "type": 1}, {"x": x, "y": 11, "type": 1}]
@@ -71,28 +78,36 @@ def _make_unranked_map():
     for y in range(1, 11):
         for x in range(1, 15):
             cells.append({"x": x, "y": y, "type": 2})
-    # Murs labyrinthe
-    for y in range(2, 6):
+    # Mur vertical gauche (couloir en L)
+    for y in range(2, 7):
         cells.append({"x": 4, "y": y, "type": 1})
-    for y in range(6, 10):
+    # Mur vertical droit
+    for y in range(5, 10):
         cells.append({"x": 11, "y": y, "type": 1})
-    for x in range(4, 9):
-        cells.append({"x": x, "y": 6, "type": 1})
-    for x in range(7, 12):
+    # Barre horizontale haute — laisse 2 cases libres à gauche (x=1,2,3)
+    # et 2 cases libres à droite (x=12,13,14)
+    for x in range(5, 10):
         cells.append({"x": x, "y": 4, "type": 1})
+    # Barre horizontale basse — laisse 2 cases libres de chaque côté
+    for x in range(5, 10):
+        cells.append({"x": x, "y": 7, "type": 1})
     # Spawns
     cells += [{"x": 2, "y": 2, "type": 3}, {"x": 13, "y": 9, "type": 4}]
-    # Powerups
+    # Zones or dans des espaces ouverts — pas entourées de murs
     cells += [
-        {"x": 2, "y": 9, "type": 5},
-        {"x": 13, "y": 2, "type": 5},
-        {"x": 7, "y": 7, "type": 5},
+        {"x": 2,  "y": 9, "type": 5},   # coin bas gauche — espace libre
+        {"x": 13, "y": 2, "type": 5},   # coin haut droit — espace libre
+        {"x": 7,  "y": 6, "type": 5},   # centre — entre les 2 barres horizontales
     ]
     return cells
 
 
 def _make_fun_map():
-    """Map Fun : grande arène ouverte avec îlots."""
+    """
+    Map Fun : grande arène ouverte avec petits îlots.
+    Les zones or sont toutes en plein espace ouvert,
+    jamais adjacentes à 2 murs en diagonale.
+    """
     cells = []
     for x in range(16):
         cells += [{"x": x, "y": 0, "type": 1}, {"x": x, "y": 11, "type": 1}]
@@ -101,35 +116,43 @@ def _make_fun_map():
     for y in range(1, 11):
         for x in range(1, 15):
             cells.append({"x": x, "y": y, "type": 2})
-    # Petits îlots
-    for coord in [(3, 3), (3, 4), (12, 7), (12, 8),
-                  (7, 2), (8, 2), (7, 9), (8, 9)]:
+    # Îlots isolés — espacés pour ne jamais former de passage diagonal
+    for coord in [
+        (3, 3), (3, 4),    # îlot haut gauche
+        (12, 7), (12, 8),  # îlot bas droit
+        (7, 1), (8, 1),    # îlot haut centre (bord)
+        (7, 10), (8, 10),  # îlot bas centre (bord)
+    ]:
         cells.append({"x": coord[0], "y": coord[1], "type": 1})
     # Spawns
     cells += [{"x": 2, "y": 2, "type": 3}, {"x": 13, "y": 9, "type": 4}]
-    # Beaucoup de powerups
+    # Zones or toutes en espace ouvert, loin des murs
     cells += [
         {"x": 5,  "y": 5,  "type": 5},
         {"x": 10, "y": 6,  "type": 5},
-        {"x": 7,  "y": 3,  "type": 5},
-        {"x": 8,  "y": 8,  "type": 5},
-        {"x": 3,  "y": 8,  "type": 5},
-        {"x": 12, "y": 3,  "type": 5},
+        {"x": 5,  "y": 8,  "type": 5},
+        {"x": 10, "y": 3,  "type": 5},
+        {"x": 3,  "y": 7,  "type": 5},
+        {"x": 12, "y": 4,  "type": 5},
     ]
     return cells
 
 
 def ensure_default_maps():
-    """Crée les 3 maps par défaut si elles n'existent pas encore."""
+    """
+    Crée ou met à jour les 3 maps par défaut.
+    Si une map existe déjà, son contenu est mis à jour
+    pour refléter les corrections de disposition.
+    """
     from app.models.map import Map
     from app.models.matchmaking_settings import MatchmakingSettings
 
     db = SessionLocal()
     try:
         maps_config = [
-            ("ranked",   "Arène Ranked",   _make_ranked_map()),
-            ("unranked", "Labyrinthe",      _make_unranked_map()),
-            ("fun",      "Îles Fun",        _make_fun_map()),
+            ("ranked",   "Arène Ranked", _make_ranked_map()),
+            ("unranked", "Labyrinthe",   _make_unranked_map()),
+            ("fun",      "Îles Fun",     _make_fun_map()),
         ]
 
         settings = db.query(MatchmakingSettings).first()
@@ -143,13 +166,15 @@ def ensure_default_maps():
             field = f"{mode}_default_map_id"
             existing_id = getattr(settings, field, None)
 
-            # Vérifier si la map existe encore
             if existing_id:
                 existing_map = db.query(Map).filter(Map.id == existing_id).first()
                 if existing_map:
-                    continue  # déjà créée
+                    # ── Mettre à jour le contenu même si la map existe ──
+                    existing_map.content_url = _build_map_cells(cells)
+                    db.commit()
+                    continue
 
-            # Créer la map
+            # Créer la map si elle n'existe pas
             new_map = Map(
                 title=title,
                 description=f"Map par défaut pour le mode {mode}",
@@ -212,14 +237,14 @@ def ensure_schema():
     if "matches" in inspector.get_table_names():
         match_columns = {column["name"] for column in inspector.get_columns("matches")}
         match_alter_statements = {
-            "map_id":            "ALTER TABLE matches ADD COLUMN map_id INTEGER",
-            "mode":              "ALTER TABLE matches ADD COLUMN mode VARCHAR NOT NULL DEFAULT 'ranked'",
-            "finished_at":       "ALTER TABLE matches ADD COLUMN finished_at TIMESTAMP NULL",
-            "duration_seconds":  "ALTER TABLE matches ADD COLUMN duration_seconds INTEGER",
-            "player1_elo_change":"ALTER TABLE matches ADD COLUMN player1_elo_change INTEGER NOT NULL DEFAULT 0",
-            "player2_elo_change":"ALTER TABLE matches ADD COLUMN player2_elo_change INTEGER NOT NULL DEFAULT 0",
-            "player1_xp_gain":   "ALTER TABLE matches ADD COLUMN player1_xp_gain INTEGER NOT NULL DEFAULT 0",
-            "player2_xp_gain":   "ALTER TABLE matches ADD COLUMN player2_xp_gain INTEGER NOT NULL DEFAULT 0",
+            "map_id":             "ALTER TABLE matches ADD COLUMN map_id INTEGER",
+            "mode":               "ALTER TABLE matches ADD COLUMN mode VARCHAR NOT NULL DEFAULT 'ranked'",
+            "finished_at":        "ALTER TABLE matches ADD COLUMN finished_at TIMESTAMP NULL",
+            "duration_seconds":   "ALTER TABLE matches ADD COLUMN duration_seconds INTEGER",
+            "player1_elo_change": "ALTER TABLE matches ADD COLUMN player1_elo_change INTEGER NOT NULL DEFAULT 0",
+            "player2_elo_change": "ALTER TABLE matches ADD COLUMN player2_elo_change INTEGER NOT NULL DEFAULT 0",
+            "player1_xp_gain":    "ALTER TABLE matches ADD COLUMN player1_xp_gain INTEGER NOT NULL DEFAULT 0",
+            "player2_xp_gain":    "ALTER TABLE matches ADD COLUMN player2_xp_gain INTEGER NOT NULL DEFAULT 0",
         }
         with engine.begin() as connection:
             for column_name, statement in match_alter_statements.items():
@@ -274,6 +299,6 @@ def ensure_modes_enabled():
 def get_db():
     db = SessionLocal()
     try:
-        yield db
+            yield db
     finally:
         db.close()

@@ -38,14 +38,13 @@ public class MultiplayerGameController : MonoBehaviour
     private Vector3 _goalPosition;
     private bool    _goalCreated       = false;
 
-    // ── Positions des murs (type 1) pour bloquer le déplacement ──
     private HashSet<Vector2Int> _wallPositions = new HashSet<Vector2Int>();
-
-    // ── Rayon de collision du joueur ──
     private const float PLAYER_RADIUS = 0.28f;
 
     void Start()
     {
+        Screen.SetResolution(960, 720, false); 
+
         _localId    = GameManager.Instance.LocalPlayer.id;
         _opponentId = GameManager.Instance.CurrentOpponentId;
         _matchId    = GameManager.Instance.CurrentMatchId;
@@ -300,20 +299,24 @@ public class MultiplayerGameController : MonoBehaviour
         if (data == null) return;
         var root = new GameObject("MapRoot");
 
-        Camera.main.orthographicSize   = Mathf.Max(data.width, data.height) * 0.5f;
-        Camera.main.transform.position = new Vector3(data.width * 0.5f, data.height * 0.5f, -10f);
+        // ── Caméra adaptée à la taille réelle de la fenêtre ──────
+        float mapWidth     = data.width;
+        float mapHeight    = data.height;
+        float screenAspect = (float)Screen.width / Screen.height;
+        float sizeByHeight = mapHeight * 0.5f;
+        float sizeByWidth  = (mapWidth * 0.5f) / screenAspect;
+
+        Camera.main.orthographicSize   = Mathf.Max(sizeByHeight, sizeByWidth) + 0.5f;
+        Camera.main.transform.position = new Vector3(mapWidth * 0.5f, mapHeight * 0.5f, -10f);
         Camera.main.backgroundColor    = new Color(0.08f, 0.08f, 0.12f);
 
         _wallPositions.Clear();
 
-        // ── NOUVEAU : repérer toutes les cases qui ont un type NON-mur ──
-        // Si une case a un mur (type 1) ET un autre type (sol/spawn/arrivée)
-        // peint par-dessus dans l'éditeur, le mur ne doit pas bloquer.
-        var nonWallCells = new HashSet<Vector2Int>();
+        var overrideCells = new HashSet<Vector2Int>();
         foreach (var cell in data.cells)
         {
-            if (cell.type != 1)
-                nonWallCells.Add(new Vector2Int(cell.x, cell.y));
+            if (cell.type == 3 || cell.type == 4 || cell.type == 5)
+                overrideCells.Add(new Vector2Int(cell.x, cell.y));
         }
 
         foreach (var cell in data.cells)
@@ -326,9 +329,7 @@ public class MultiplayerGameController : MonoBehaviour
             if (cell.type == 1)
             {
                 var coord = new Vector2Int(cell.x, cell.y);
-                // N'enregistrer comme mur que si AUCUNE autre tuile
-                // non-mur n'existe à cette même position
-                if (!nonWallCells.Contains(coord))
+                if (!overrideCells.Contains(coord))
                     _wallPositions.Add(coord);
             }
 
