@@ -39,8 +39,6 @@ Bloc fonctionnel porte par Amina:
 - admin panel avec monitoring, sanctions, reglages MMR/rangs/recompenses
 - module maps / UGC avec votes, favoris, commentaires, tests Unity et signalements
 
-## Axes complementaires du cahier des charges
-
 ### Produit / UX
 
 Bloc fonctionnel porte par Anas :
