@@ -17,6 +17,7 @@ import Maps from "./pages/Maps";
 import MyMaps from "./pages/MyMaps";
 import Store from "./pages/Store";
 import CheckoutSim from "./pages/CheckoutSim";
+import ProtectedLayout from "./components/ProtectedLayout";
 import { getMe } from "./services/api";
 
 function ProtectedRoute({ children }) {
@@ -57,6 +58,14 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function ProtectedWithLayout({ children }) {
+  return (
+    <ProtectedRoute>
+      <ProtectedLayout>{children}</ProtectedLayout>
+    </ProtectedRoute>
+  );
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -68,17 +77,17 @@ function AnimatedRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/maps" element={<ProtectedRoute><Maps /></ProtectedRoute>} />
-        <Route path="/my-maps" element={<ProtectedRoute><MyMaps /></ProtectedRoute>} />
-        <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedWithLayout><Profile /></ProtectedWithLayout>} />
+        <Route path="/maps" element={<ProtectedWithLayout><Maps /></ProtectedWithLayout>} />
+        <Route path="/my-maps" element={<ProtectedWithLayout><MyMaps /></ProtectedWithLayout>} />
+        <Route path="/store" element={<ProtectedWithLayout><Store /></ProtectedWithLayout>} />
         <Route path="/checkout/:providerSlug" element={<ProtectedRoute><CheckoutSim /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedWithLayout><Dashboard /></ProtectedWithLayout>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        <Route path="/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
+        <Route path="/matchmaking" element={<ProtectedWithLayout><Matchmaking /></ProtectedWithLayout>} />
         <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-        <Route path="/elo" element={<ProtectedRoute><EloGraph /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedWithLayout><History /></ProtectedWithLayout>} />
+        <Route path="/elo" element={<ProtectedWithLayout><EloGraph /></ProtectedWithLayout>} />
       </Routes>
     </AnimatePresence>
   );
