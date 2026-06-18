@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import { getHistory } from "../services/match";
 
@@ -30,19 +29,16 @@ export default function History() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen p-6 text-white">
-        <div className="mb-10 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 bg-clip-text text-5xl font-black text-transparent">
-              MATCH HISTORY
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-400">
-              Filtre par mode, periode ou joueur, puis analyse les gains MMR, XP et la
-              physionomie de chaque match.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-10">
+          <h1 className="bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 bg-clip-text text-4xl font-black text-transparent sm:text-5xl">
+            MATCH HISTORY
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-400">
+            Filtre par mode, periode ou joueur, puis analyse les gains MMR, XP et la
+            physionomie de chaque match.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 md:grid-cols-3">

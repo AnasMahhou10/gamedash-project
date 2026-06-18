@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import {
   commentMap,
@@ -476,19 +475,16 @@ export default function Maps() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl text-purple-300 drop-shadow-[0_0_20px_rgba(192,132,252,0.35)] sm:text-4xl">
-              GameDash Community Hub
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-400">
-              Explore les maps communautaires, publie du vrai contenu, suis les tests et
-              mets les createurs en avant.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl text-purple-300 drop-shadow-[0_0_20px_rgba(192,132,252,0.35)] sm:text-4xl">
+            GameDash Community Hub
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-400">
+            Explore les maps communautaires, publie du vrai contenu, suis les tests et
+            mets les createurs en avant.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-[1.05fr_0.95fr]">

@@ -12,7 +12,6 @@ import {
   YAxis,
 } from "recharts";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import {
   getDashboardSummary,
@@ -144,20 +143,17 @@ export default function Dashboard() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
-              GameDash
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-400">
-              Vue competitive complete: MMR par mode, rang, niveau, progression et quetes.
-            </p>
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
+            GameDash
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-400">
+            Vue competitive complete: MMR par mode, rang, niveau, progression et quetes.
+          </p>
         </div>
 
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+        <div className="mb-8 hidden gap-3 md:flex md:flex-wrap">
           <button
             onClick={() => window.location.href = "/matchmaking"}
             className="nav-button nav-button-purple"

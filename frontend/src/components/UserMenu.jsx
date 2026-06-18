@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMapNotifications } from "../services/maps";
 
 export default function UserMenu({ user }) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -26,7 +28,7 @@ export default function UserMenu({ user }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("match");
-    window.location.href = "/";
+    navigate("/");
   };
 
   return (
@@ -64,24 +66,30 @@ export default function UserMenu({ user }) {
       {isOpen && (
         <div className="absolute right-0 z-50 mt-3 w-64 rounded-2xl border border-cyan-500/20 bg-slate-950/95 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl">
           <button
+            type="button"
             onClick={() => {
-              window.location.href = "/profile";
+              setIsOpen(false);
+              navigate("/profile");
             }}
             className="w-full rounded-xl px-4 py-3 text-left text-sm text-white transition hover:bg-white/10"
           >
             Voir profil
           </button>
           <button
+            type="button"
             onClick={() => {
-              window.location.href = "/store";
+              setIsOpen(false);
+              navigate("/store");
             }}
             className="w-full rounded-xl px-4 py-3 text-left text-sm text-white transition hover:bg-white/10"
           >
             Boutique & inventaire
           </button>
           <button
+            type="button"
             onClick={() => {
-              window.location.href = "/my-maps";
+              setIsOpen(false);
+              navigate("/my-maps");
             }}
             className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm text-white transition hover:bg-white/10"
           >

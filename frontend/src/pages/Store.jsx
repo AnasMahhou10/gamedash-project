@@ -3,7 +3,6 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import {
   checkoutPack,
@@ -69,7 +68,7 @@ export default function Store() {
   if (loading) {
     return (
       <PageWrapper>
-        <div className="flex min-h-screen items-center justify-center text-white">
+        <div className="flex items-center justify-center py-24 text-white">
           Chargement de la boutique...
         </div>
       </PageWrapper>
@@ -78,18 +77,15 @@ export default function Store() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen p-6 text-white">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-amber-300 drop-shadow-[0_0_22px_rgba(252,211,77,0.35)]">
-              Boutique & Economie
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-300">
-              Boutique live, inventaire equipe, packs monetises, pass de saison et journal de transactions.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-amber-300 drop-shadow-[0_0_22px_rgba(252,211,77,0.35)] sm:text-4xl">
+            Boutique & Economie
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-300">
+            Boutique live, inventaire equipe, packs monetises, pass de saison et journal de transactions.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">

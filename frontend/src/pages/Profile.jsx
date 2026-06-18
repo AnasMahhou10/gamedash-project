@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { deleteAccount, getMe, updateProfile } from "../services/api";
 
 const fileToDataUrl = (file) =>
@@ -115,18 +114,15 @@ export default function Profile() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen p-6 text-white">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-cyan-400 drop-shadow-[0_0_20px_rgba(0,212,255,0.7)]">
-              Mon Profil
-            </h1>
-            <p className="mt-2 text-slate-400">
-              Personnalisez votre compte, vos preferences et votre identite joueur.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={user} />
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-cyan-400 drop-shadow-[0_0_20px_rgba(0,212,255,0.7)] sm:text-4xl">
+            Mon Profil
+          </h1>
+          <p className="mt-2 text-slate-400">
+            Personnalisez votre compte, vos preferences et votre identite joueur.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr]">

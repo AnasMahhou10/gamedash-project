@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import {
   createMatch,
@@ -247,19 +246,16 @@ export default function Matchmaking() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
-              GameDash Matchmaking
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-400">
-              Choisis une file, surveille l'etat des joueurs et lance une recherche
-              qui prend en compte l'ELO, le mode et le temps d'attente maximum.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl text-cyan-300 drop-shadow-[0_0_20px_rgba(0,212,255,0.35)] sm:text-4xl">
+            GameDash Matchmaking
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-400">
+            Choisis une file, surveille l'etat des joueurs et lance une recherche
+            qui prend en compte l'ELO, le mode et le temps d'attente maximum.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">

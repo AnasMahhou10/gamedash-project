@@ -318,3 +318,23 @@ button:disabled {
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
+
+.app-layout-main {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .app-layout-main {
+    padding-bottom: 1.5rem;
+  }
+}
+
+.mobile-nav-inner {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-nav-item {
+  min-height: 3.25rem;
+  min-width: 3.25rem;
+  -webkit-tap-highlight-color: transparent;
+}

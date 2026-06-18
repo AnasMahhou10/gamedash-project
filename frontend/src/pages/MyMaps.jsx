@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import BackToDashboardButton from "../components/BackToDashboardButton";
 import PageWrapper from "../components/PageWrapper";
-import UserMenu from "../components/UserMenu";
 import { getMe } from "../services/api";
 import {
   commentMap,
@@ -76,18 +75,15 @@ export default function MyMaps() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen p-6 text-white">
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl text-cyan-400 drop-shadow-[0_0_20px_rgba(0,212,255,0.7)]">
-              My Maps Studio
-            </h1>
-            <p className="mt-2 max-w-3xl text-slate-400">
-              Gerez vos maps, surveillez l'activite communautaire et repondez aux commentaires.
-            </p>
-            <BackToDashboardButton className="mt-4" />
-          </div>
-          <UserMenu user={currentUser} />
+      <div>
+        <div className="mb-8">
+          <h1 className="text-3xl text-cyan-400 drop-shadow-[0_0_20px_rgba(0,212,255,0.7)] sm:text-4xl">
+            My Maps Studio
+          </h1>
+          <p className="mt-2 max-w-3xl text-slate-400">
+            Gerez vos maps, surveillez l'activite communautaire et repondez aux commentaires.
+          </p>
+          <BackToDashboardButton className="mt-4" />
         </div>
 
         <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
