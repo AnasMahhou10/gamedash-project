@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL, logError } from "../config";
 import { register } from "../services/api";
 
 export default function Register() {
@@ -46,7 +47,7 @@ export default function Register() {
       alert("Compte cree avec succes. Vous pouvez maintenant vous connecter.");
       window.location.href = "/";
     } catch (err) {
-      console.error(err);
+      logError("Register", err, { apiUrl: API_URL, email });
       alert(
         "Erreur inscription: " +
           (err.response?.data?.detail || err.message || "Impossible de creer le compte")

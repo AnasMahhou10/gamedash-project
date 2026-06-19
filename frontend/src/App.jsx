@@ -18,6 +18,7 @@ import MyMaps from "./pages/MyMaps";
 import Store from "./pages/Store";
 import CheckoutSim from "./pages/CheckoutSim";
 import ProtectedLayout from "./components/ProtectedLayout";
+import { logError } from "./config";
 import { getMe } from "./services/api";
 
 function ProtectedRoute({ children }) {
@@ -32,7 +33,8 @@ function ProtectedRoute({ children }) {
           setStatus("allowed");
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        logError("ProtectedRoute session check", err);
         if (isMounted) {
           setStatus("blocked");
         }
@@ -68,6 +70,10 @@ function ProtectedWithLayout({ children }) {
 
 function AnimatedRoutes() {
   const location = useLocation();
+
+  useEffect(() => {
+    console.info("[GameDash] Navigation", location.pathname);
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait">

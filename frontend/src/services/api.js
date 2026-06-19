@@ -1,7 +1,7 @@
-import { API_URL } from "../config";
+import { API_URL, fetchWithLog } from "../config";
 
 export async function login(email, password) {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetchWithLog(`${API_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -10,7 +10,7 @@ export async function login(email, password) {
       email,
       password,
     }),
-  });
+  }, "auth/login");
 
   if (!response.ok) {
     throw new Error("Login failed");
@@ -20,7 +20,7 @@ export async function login(email, password) {
 }
 
 export async function register({ pseudo, email, password }) {
-  const response = await fetch(`${API_URL}/auth/register`, {
+  const response = await fetchWithLog(`${API_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -30,7 +30,7 @@ export async function register({ pseudo, email, password }) {
       email,
       password,
     }),
-  });
+  }, "auth/register");
 
   if (!response.ok) {
     let message = "Register failed";
@@ -49,13 +49,13 @@ export async function register({ pseudo, email, password }) {
 }
 
 export async function forgotPassword(email) {
-  const response = await fetch(`${API_URL}/auth/forgot-password`, {
+  const response = await fetchWithLog(`${API_URL}/auth/forgot-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ email }),
-  });
+  }, "auth/forgot-password");
 
   if (!response.ok) {
     throw new Error("Unable to request password reset");
@@ -65,13 +65,13 @@ export async function forgotPassword(email) {
 }
 
 export async function resetPassword(token, password) {
-  const response = await fetch(`${API_URL}/auth/reset-password`, {
+  const response = await fetchWithLog(`${API_URL}/auth/reset-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ token, password }),
-  });
+  }, "auth/reset-password");
 
   if (!response.ok) {
     let message = "Unable to reset password";
@@ -94,11 +94,11 @@ export async function getMe() {
     throw new Error("No active session");
   }
 
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await fetchWithLog(`${API_URL}/auth/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  });
+  }, "auth/me");
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
@@ -114,14 +114,14 @@ export async function getMe() {
 export async function updateProfile(userId, payload) {
   const token = localStorage.getItem("token");
 
-  const response = await fetch(`${API_URL}/users/${userId}`, {
+  const response = await fetchWithLog(`${API_URL}/users/${userId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
-  });
+  }, "users/update");
 
   if (!response.ok) {
     throw new Error("Unable to update profile");
@@ -133,12 +133,12 @@ export async function updateProfile(userId, payload) {
 export async function deleteAccount(userId) {
   const token = localStorage.getItem("token");
 
-  const response = await fetch(`${API_URL}/users/${userId}`, {
+  const response = await fetchWithLog(`${API_URL}/users/${userId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  });
+  }, "users/delete");
 
   if (!response.ok) {
     throw new Error("Unable to delete account");

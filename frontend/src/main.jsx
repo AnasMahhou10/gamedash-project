@@ -1,7 +1,10 @@
 import ReactDOM from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 import App from "./App";
+import { logAppConfig } from "./config";
 import "./index.css";
+
+logAppConfig();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <>
