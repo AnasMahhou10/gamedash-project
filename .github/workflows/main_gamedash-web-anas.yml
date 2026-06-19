@@ -35,12 +35,22 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          cd frontend
-          rm -rf node_modules
-          mkdir -p ../deploy-package/dist ../deploy-package/scripts
-          cp -r dist/. ../deploy-package/dist/
-          cp -r scripts/. ../deploy-package/scripts/
-          cp package.json package-lock.json ../deploy-package/
+          mkdir -p deploy-package/dist deploy-package/scripts
+          cp -r frontend/dist/. deploy-package/dist/
+          cp frontend/scripts/start-azure.mjs deploy-package/scripts/
+          cat > deploy-package/package.json << 'EOF'
+          {
+            "name": "gamedash-web",
+            "private": true,
+            "type": "module",
+            "scripts": {
+              "start": "node scripts/start-azure.mjs"
+            },
+            "dependencies": {
+              "serve": "^14.2.4"
+            }
+          }
+          EOF
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
