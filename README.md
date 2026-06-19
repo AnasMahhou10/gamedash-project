@@ -24,7 +24,7 @@ Projet realise par :
 
 ## Fonctionnalites principales
 
-Bloc fonctionnel porte par Amina:
+**Bloc fonctionnel porte par Amina:**
 
 - authentification email / mot de passe
 - login Google OAuth
@@ -41,14 +41,16 @@ Bloc fonctionnel porte par Amina:
 
 ### Produit / UX et deploiement Azure
 
-Bloc fonctionnel porte par Anas Mahhou : refonte **mobile first** du frontend React, industrialisation de la configuration multi-environnement, et **mise en production complete** sur Microsoft Azure (infra + CI/CD + debugging prod).
+**Bloc fonctionnel porte par Anas Mahhou :**
+
+Refonte **mobile first** du frontend React, industrialisation de la configuration multi-environnement, et **mise en production complete** sur Microsoft Azure (infra + CI/CD + debugging prod).
 
 #### UX mobile first (frontend)
 
 **Architecture UI**
 
 - refonte de la navigation autour de 3 composants dedies :
-  - `MobileNav.jsx` : barre inferieure fixe (5 onglets) avec detection d'onglet actif sur plusieurs routes (`/dashboard`, `/history`, `/elo`, `/maps`, `/my-maps`, `/store`, `/checkout`, etc.)
+  - `MobileNav.jsx` : barre inferieure fixe avec detection d'onglet actif sur plusieurs routes (`/dashboard`, `/history`, `/elo`, `/maps`, `/my-maps`, `/store`, `/checkout`, etc.)
   - `AppLayout.jsx` : shell global (header sticky, zone contenu, footer nav) avec chargement utilisateur via `getMe()`
   - `ProtectedLayout.jsx` : wrapper des routes authentifiees
 - integration dans le routeur (`App.jsx`) pour unifier toutes les pages joueur sous le meme layout responsive
@@ -88,7 +90,6 @@ Avant le deploiement, l'API etait hardcodee en `localhost:8000` dans chaque serv
 **Contexte et contraintes**
 
 - abonnement **Azure for Students** : politique de regions limitant le deploiement a `italynorth`, `polandcentral`, `germanywestcentral`, `swedencentral`, `uaenorth`
-- tentative initiale **Azure Static Web Apps** abandonnee (regions SWA indisponibles sur l'abonnement etudiant)
 - **Plan B retenu** : deux App Services Linux dans le meme plan partage `ASP-rggamedash-aac0`, groupe de ressources `rg-gamedash`, region **Italy North**
 
 **Infrastructure provisionnee**
@@ -163,25 +164,10 @@ Avant le deploiement, l'API etait hardcodee en `localhost:8000` dans chaque serv
 - **Swagger / OpenAPI** : `/docs` sur l'URL backend
 - **WebSockets** : `wss://gamedash-api-anas-.../ws/...` (matchmaking, parties live)
 
-#### Fichiers cles modifies / crees
-
-```text
-frontend/src/config.js                    # config API + WebSocket + logs
-frontend/scripts/start-azure.mjs          # demarrage App Service
-frontend/.env.example                     # doc VITE_API_URL
-frontend/src/components/MobileNav.jsx     # nav mobile
-frontend/src/components/AppLayout.jsx     # layout global
-frontend/src/components/ProtectedLayout.jsx
-frontend/src/services/*.js                # 9 services migres
-frontend/package.json                     # start Azure + serve
-backend/requirements.txt                  # + gunicorn
-.github/workflows/main_gamedash-api-anas.yml
-.github/workflows/main_gamedash-web-anas.yml
-```
 
 ### Boutique / Economie
 
-Bloc fonctionnel porte par Mariya:
+**Bloc fonctionnel porte par Mariya:**
 
 - soft currency
 - hard currency
