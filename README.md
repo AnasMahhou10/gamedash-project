@@ -20,7 +20,7 @@ Projet realise par :
 
 - Amina LOZI
 - Mariya ABBAKIL
-- Anas MAHHO
+- Anas Mahhou
 
 ## Fonctionnalites principales
 
@@ -39,50 +39,145 @@ Bloc fonctionnel porte par Amina:
 - admin panel avec monitoring, sanctions, reglages MMR/rangs/recompenses
 - module maps / UGC avec votes, favoris, commentaires, tests Unity et signalements
 
-### Produit / UX
+### Produit / UX et deploiement Azure
 
-Bloc fonctionnel porte par Anas :
+Bloc fonctionnel porte par Anas Mahhou : refonte **mobile first** du frontend React, industrialisation de la configuration multi-environnement, et **mise en production complete** sur Microsoft Azure (infra + CI/CD + debugging prod).
 
-- parcours mobile first plus pousse
-- mise en avant des maps et createurs
-- notifications in-app
-- saisons competitives
-- saisons / recompenses createurs
-- choix de l'architecture AWS adaptee :
-  - backend : EC2 / ECS / Fargate / Lambda
-  - base de donnees : RDS PostgreSQL ou MySQL
-  - frontend : S3 + CloudFront
-  - stockage de fichiers / maps : S3
-- configuration de l'infrastructure reseau :
-  - VPC, sous-reseaux publics / prives
-  - security groups pour l'API, la base de donnees et les services
-- preparation de la base de donnees :
-  - creation de l'instance RDS
-  - configuration des acces
-  - execution des migrations SQL / SQLAlchemy
-- gestion des secrets et de la configuration :
-  - AWS Secrets Manager ou Parameter Store
-  - variables d'environnement pour le backend et le frontend
-- deploiement du backend :
-  - containerisation de l'application ou packaging de l'API
-  - lancement sur ECS / Fargate ou EC2
-  - configuration d'un load balancer si necessaire
-- deploiement du frontend :
-  - build du site React
-  - publication dans S3
-  - distribution avec CloudFront
-- configuration du domaine et du HTTPS :
-  - Route 53 pour le DNS
-  - certificat ACM pour TLS
-- mise en place CI/CD :
-  - pipeline GitHub Actions / CodePipeline
-  - build, tests et deploiement automatique
-- logs et monitoring :
-  - CloudWatch logs et metriques
-  - alarmes de disponibilite et d'erreurs
-- tests en staging :
-  - verification des flux map / test, matchmaking et profil
-  - validation ELO / MMR / coins / victoires avant production
+#### UX mobile first (frontend)
+
+**Architecture UI**
+
+- refonte de la navigation autour de 3 composants dedies :
+  - `MobileNav.jsx` : barre inferieure fixe (5 onglets) avec detection d'onglet actif sur plusieurs routes (`/dashboard`, `/history`, `/elo`, `/maps`, `/my-maps`, `/store`, `/checkout`, etc.)
+  - `AppLayout.jsx` : shell global (header sticky, zone contenu, footer nav) avec chargement utilisateur via `getMe()`
+  - `ProtectedLayout.jsx` : wrapper des routes authentifiees
+- integration dans le routeur (`App.jsx`) pour unifier toutes les pages joueur sous le meme layout responsive
+- header compact avec `UserMenu`, logo GameDash et fond glassmorphism (`backdrop-blur`) adapte aux ecrans etroits
+
+**Pages adaptees mobile**
+
+- `Dashboard.jsx` : cartes stats, graphiques Recharts et actions rapides reorganises en colonne sur mobile
+- `Matchmaking.jsx` : files ranked / unranked / fun, etat queue et WebSocket temps reel
+- `Maps.jsx` / `MyMaps.jsx` : grilles de cartes UGC lisibles au pouce
+- `Store.jsx` / `Profile.jsx` / `History.jsx` / `EloGraph.jsx` : espacements, typographie et scroll vertical optimises
+- `Game.jsx` : connexion WebSocket in-game depuis l'URL API de prod (`wss://`)
+
+**Principes UX retenus**
+
+- **mobile first** : conception depuis 320px, puis breakpoints Tailwind `sm` / `lg`
+- navigation principale accessible au pouce (barre basse, zones tactiles genereuses)
+- pas d'application native : strategie **PWA-ready** via web responsive uniquement
+- coherence visuelle avec le design system existant (Tailwind, Framer Motion, palette cyan/slate)
+
+#### Centralisation de la configuration API (frontend)
+
+Avant le deploiement, l'API etait hardcodee en `localhost:8000` dans chaque service. Refactoring complet :
+
+- creation de `frontend/src/config.js` comme **point unique** de configuration :
+  - `API_URL` via `VITE_API_URL` (fallback dev `127.0.0.1:8000`)
+  - `getWebSocketUrl()` : conversion automatique `http→ws` / `https→wss` pour matchmaking et parties live
+  - utilitaires de diagnostic : `logAppConfig`, `fetchWithLog`, `logError`
+- migration de **tous les services** vers `config.js` :
+  - `api.js`, `dashboard.js`, `matchmaking.js`, `match.js`, `game.js`, `maps.js`, `elo.js`, `shop.js`, `admin.js`
+- migration des pages auth et gameplay : `Login.jsx`, `Register.jsx`, `Dashboard.jsx`, `Matchmaking.jsx`, `Game.jsx`
+- boot log au demarrage dans `main.jsx` pour tracer la config en production
+- fichier `frontend/.env.example` documente la variable `VITE_API_URL` pour les devs
+
+#### Deploiement Microsoft Azure
+
+**Contexte et contraintes**
+
+- abonnement **Azure for Students** : politique de regions limitant le deploiement a `italynorth`, `polandcentral`, `germanywestcentral`, `swedencentral`, `uaenorth`
+- tentative initiale **Azure Static Web Apps** abandonnee (regions SWA indisponibles sur l'abonnement etudiant)
+- **Plan B retenu** : deux App Services Linux dans le meme plan partage `ASP-rggamedash-aac0`, groupe de ressources `rg-gamedash`, region **Italy North**
+
+**Infrastructure provisionnee**
+
+| Ressource | Nom | Role |
+|-----------|-----|------|
+| PostgreSQL Flexible Server | `gamedash.postgres.database.azure.com` | Base de donnees production |
+| App Service (Linux) | `gamedash-api-anas` | API FastAPI Python 3.11 |
+| App Service (Linux) | `gamedash-web-anas` | Frontend React (build Vite) |
+| Application Insights | lie aux deux App Services | Traces et metriques Azure |
+
+**Backend API (`gamedash-api-anas`)**
+
+- runtime Python 3.11 sur App Service Linux
+- commande de demarrage : `gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000`
+- ajout de `gunicorn==23.0.0` dans `backend/requirements.txt` pour servir FastAPI + WebSockets en prod
+- variables d'environnement : `DATABASE_URL`, `FRONTEND_URL`, `BACKEND_URL`, secrets JWT / OAuth / SMTP
+- firewall PostgreSQL configure pour autoriser les IP Azure App Service
+
+**Frontend web (`gamedash-web-anas`)**
+
+- runtime **Node.js 22 LTS**
+- build Vite en CI avec `VITE_API_URL` injecte au moment du `npm run build`
+- script de demarrage dedie `frontend/scripts/start-azure.mjs` :
+  - lecture du port Azure (`PORT` / `WEBSITES_PORT`, defaut 8080)
+  - verification de `dist/index.html` avant lancement
+  - logs de diagnostic (version Node, presence de `dist`, `serve`)
+  - serving SPA via `serve -s dist` (fallback routing React Router)
+- dependance `serve` ajoutee dans `package.json`, script `"start": "node scripts/start-azure.mjs"`
+- App Settings Azure : `WEBSITES_PORT=8080`, `VITE_API_URL`, `SCM_DO_BUILD_DURING_DEPLOYMENT=true`, **Always On** active (plan B1)
+
+**Authentification de deploiement (OIDC)**
+
+- Publish Profile desactive (Basic Auth off) → bascule vers **OpenID Connect** GitHub ↔ Azure
+- creation d'une identite federee Azure AD par App Service
+- secrets GitHub Actions generes automatiquement par Azure (noms exacts avec suffixes UUID) :
+  - frontend : `AZUREAPPSERVICE_CLIENTID_0CFADCCAE69C4661AD3D59ACFEF5BFB6`, etc.
+  - backend : secrets dedies `gamedash-api-anas`
+- permissions workflow : `id-token: write` pour le job deploy
+
+#### CI/CD GitHub Actions
+
+**Backend** — `.github/workflows/main_gamedash-api-anas.yml`
+
+- declenchement : push `main` + `workflow_dispatch`
+- job `build` : checkout, venv Python 3.11, `pip install -r backend/requirements.txt`, upload artifact
+- job `deploy` : `azure/login@v2` (OIDC) + `azure/webapps-deploy@v3` vers `gamedash-api-anas`
+
+**Frontend** — `.github/workflows/main_gamedash-web-anas.yml`
+
+- declenchement : push `main` sur `frontend/**` ou le workflow + `workflow_dispatch`
+- job `build` : Node 22, cache npm, `npm ci` + `npm run build` avec `VITE_API_URL` pointant vers l'API Azure
+- upload artifact du dossier `frontend/` complet (`dist` + scripts + `package.json`)
+- job `deploy` : login OIDC + deploiement ZIP vers `gamedash-web-anas`
+
+**Repository de deploiement** : [AnasMahhou10/gamedash-project](https://github.com/AnasMahhou10/gamedash-project) (fork dedie au deploiement Azure, synchronise avec le repo equipe `loziamina/gamedash-project`)
+
+#### Incidents resolus en production (debugging)
+
+| Probleme | Cause | Resolution |
+|----------|-------|------------|
+| Frontend appelle `127.0.0.1:8000` en prod | `VITE_API_URL` absent au build | Injection en CI + App Setting Azure + refacto `config.js` |
+| Erreur 503 Application Error (frontend) | `serve` / port / Always Off | Script `start-azure.mjs`, `WEBSITES_PORT=8080`, Always On |
+| Echec login OIDC GitHub Actions | Mauvais noms de secrets | Alignement exact des suffixes `AZUREAPPSERVICE_*` depuis GitHub |
+| ZIP Deploy frontend trop lourd | `node_modules` inclus | Artifact build CI + `npm ci` cote runner, pas en prod |
+| WebSocket matchmaking en prod | URL `ws://localhost` | `getWebSocketUrl()` avec bascule `wss://` automatique |
+
+#### URLs de production
+
+- **Frontend** : `https://gamedash-web-anas-f0gkfwgrcmdyf6at.italynorth-01.azurewebsites.net`
+- **Backend API** : `https://gamedash-api-anas-dmh6dafyeaemfjhj.italynorth-01.azurewebsites.net`
+- **Swagger / OpenAPI** : `/docs` sur l'URL backend
+- **WebSockets** : `wss://gamedash-api-anas-.../ws/...` (matchmaking, parties live)
+
+#### Fichiers cles modifies / crees
+
+```text
+frontend/src/config.js                    # config API + WebSocket + logs
+frontend/scripts/start-azure.mjs          # demarrage App Service
+frontend/.env.example                     # doc VITE_API_URL
+frontend/src/components/MobileNav.jsx     # nav mobile
+frontend/src/components/AppLayout.jsx     # layout global
+frontend/src/components/ProtectedLayout.jsx
+frontend/src/services/*.js                # 9 services migres
+frontend/package.json                     # start Azure + serve
+backend/requirements.txt                  # + gunicorn
+.github/workflows/main_gamedash-api-anas.yml
+.github/workflows/main_gamedash-web-anas.yml
+```
 
 ### Boutique / Economie
 
